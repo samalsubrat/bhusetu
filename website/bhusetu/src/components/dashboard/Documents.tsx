@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from 'next/navigation'
 import { Button } from "../ui/button"
-import { Upload, FileText, Trash2, CreditCard, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck } from "lucide-react"
+import { Upload, FileText, Trash2, CreditCard, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck, MapPin, RefreshCw } from "lucide-react"
 
 
 const Documents = () => {
@@ -54,12 +54,41 @@ const Documents = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Left Panel  */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-2 space-y-6">
+
+                    {/* Digilocker 
+                    <div className="relative p-4 rounded-xl border-4 border-blue-400 bg-white flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="size-12 rounded-xl bg-[#2E7D32] flex items-center justify-center shrink-0">
+                                    <MapPin className="size-5 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900">Quick Fetch with DigiLocker</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">Directly link Aadhaar, PAN, and Land Records</p>
+                                </div>
+                            </div>
+                            <Button className=" hover:bg-blue-800 cursor-pointer text-white shrink-0 gap-2 whitespace-nowrap">
+                                <RefreshCw className="size-4" />
+                                Verify with DigiLocker
+                            </Button>
+                        </div>
+                        <div className="flex items-start gap-2 px-1">
+                            <ShieldCheck className="size-4 text-primary shrink-0 mt-0.5" />
+                            <p className="text-sm text-gray-500"><span className="font-bold text-slate-900">Why use DigiLocker?</span> Retrieval is 80% faster and documents come <span className="text-primary font-bold">pre-verified</span> for immediate blockchain submission, bypassing manual inspection delays.</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2">
+                        <div className="h-px flex-1 bg-gray-300" />
+                        <div className="shrink-0 text-sm text-gray-400 font-bold tracking-widest">OR MANUALLY UPLOAD</div>
+                        <div className="h-px flex-1 bg-gray-300" />
+                    </div> */}
 
                     {/* cards  */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Sale Deed */}
-                        <div className="relative p-5 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
+                        <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
                             <div className="flex items-start justify-between">
                                 <div className="size-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
                                     <FileText className="size-6" />
@@ -72,7 +101,7 @@ const Documents = () => {
                                 <h3 className="font-bold text-slate-900">Sale Deed</h3>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">Mandatory legal document for land registration.</p>
                             </div>
-                            <div className="mt-auto pt-3">
+                            <div className="mt-auto pt-2">
                                 <div className="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200">
                                     <FileText className="size-4 text-blue-600 shrink-0" />
                                     <span className="text-xs font-medium text-slate-700 truncate">Sale_Deed_v1.pdf</span>
@@ -82,7 +111,7 @@ const Documents = () => {
                         </div>
 
                         {/* Tax Receipts */}
-                        <div className="relative p-5 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
+                        <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
                             <div className="flex items-start justify-between">
                                 <div className="size-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
                                     <CreditCard className="size-6" />
@@ -92,7 +121,7 @@ const Documents = () => {
                                 <h3 className="font-bold text-slate-900">Tax Receipts</h3>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">Upload latest property tax clearance receipts.</p>
                             </div>
-                            <div className="mt-auto pt-3">
+                            <div className="mt-auto pt-2">
                                 <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                                     <Upload className="size-4 text-slate-400" />
                                     <span className="text-sm text-slate-500 font-medium">Upload File</span>
@@ -103,7 +132,7 @@ const Documents = () => {
                         </div>
 
                         {/* Identity Proof */}
-                        <div className="relative p-5 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
+                        <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
                             <div className="flex items-start justify-between">
                                 <div className="size-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
                                     <CreditCard className="size-6" />
@@ -116,7 +145,7 @@ const Documents = () => {
                                 <h3 className="font-bold text-slate-900">Aadhar Card</h3>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">Government issued ID for Identity Proof.</p>
                             </div>
-                            <div className="mt-auto pt-3">
+                            <div className="mt-auto pt-2">
                                 <div className="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200">
                                     <CreditCard className="size-4 text-blue-600 shrink-0" />
                                     <span className="text-xs font-medium text-slate-700 truncate">ID_Proof_Aadhar.jpg</span>

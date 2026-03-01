@@ -9,10 +9,6 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   FileText,
-  Home,
-  Building2,
-  LandPlot,
-  Landmark,
   ScrollText,
 } from "lucide-react";
 import { Footer } from "@/components/footer";

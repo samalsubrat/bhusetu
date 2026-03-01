@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "tailwindcss/utilities";  /* ← utilities last, always wins */
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -125,11 +127,7 @@
   }
 }
 
-.glass-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid oklch(0.488 0.217 264 / 0.1);
-}
+
 
 @keyframes texture-drift {
   0% { background-position: 0 0, 15px 15px; }
