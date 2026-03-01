@@ -24,7 +24,7 @@ export default function MarketplacePage() {
                 {/* Header Title Section */}
                 <div className="mb-8 mt-4">
                     <h1 className="text-slate-900 text-4xl font-black tracking-tight mb-2">Property Marketplace</h1>
-                    <p className="text-slate-500 text-lg max-w-2xl">
+                    <p className="text-slate-500 text-lg">
                         Secure, blockchain-verified national land registry. Every transaction is transparent, immutable, and government-approved.
                     </p>
                 </div>

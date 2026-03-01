@@ -1,236 +1,202 @@
+"use client"
+
+import React from "react"
 import { Footer } from "@/components/footer"
 import MaxWidthWrapper from "@/components/MaxWidthWrapper"
 import Navbar from "@/components/Navbar"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
-import { FileText, CreditCard, Upload, Info, ArrowRight, MapPin, Shield, Check, ChevronRight, ShieldCheck, RefreshCw, Delete, Trash, Trash2 } from "lucide-react"
-import Image from "next/image"
-// using standard img here to avoid next/image layout issues in this card
+import {
+    ArrowRight,
+    MapPin,
+    ChevronRight,
+    User,
+    Phone,
+    Home,
+    IndianRupee,
+    Shield,
+    LayoutGrid,
+} from "lucide-react"
 
+const page = ({ params }: { params: Promise<{ propertyId: string }> }) => {
+    const { propertyId } = React.use(params)
 
-const page = ({ params }: { params: { propertyId: string } }) => {
-    const { propertyId } = params;
     return (
         <>
             <Navbar />
             <MaxWidthWrapper className="py-8 mt-4">
-                <nav className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+
+                {/* Breadcrumb */}
+                <nav className="flex items-center gap-2 text-sm text-slate-500 mb-8">
                     <a className="hover:text-primary" href="#">National Registry</a>
                     <ChevronRight className="w-3 h-3" />
                     <a className="hover:text-primary" href="#">Karnataka State</a>
                     <ChevronRight className="w-3 h-3" />
-                    <span className="text-slate-900 dark:text-slate-100 font-medium"> BhuID-8829-XQ</span>
+                    <Link className="hover:text-primary" href={`/marketplace/${propertyId}`}>{propertyId}</Link>
+                    <ChevronRight className="w-3 h-3" />
+                    <span className="text-slate-900 font-medium">Buy Request</span>
                 </nav>
-                <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-                        Document Upload
-                    </h1>
-                    <p className="text-slate-500 mt-2">
-                        Please upload all the mandatory legal documents required for the property registration process. All files will be encrypted and hased on the BhuSetu blockchain for immutable record-keeping.
-                    </p>
-                </div>
 
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 py-4">
-
-                    {/* left side  */}
-                    <div className="lg:col-span-2 space-y-4">
-                        {/* cards  */}
-                        <div className="grid grid-cols-1 gap-4 p-4 border-2 border-slate-200 bg-white rounded-2xl">
-                            {/* Digilocker  */}
-                            <div className="relative p-4 rounded-xl border-4 border-blue-400 bg-white flex flex-col gap-3">
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="size-12 rounded-xl bg-[#2E7D32] flex items-center justify-center shrink-0">
-                                            <MapPin className="size-5 text-white" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-900">Quick Fetch with DigiLocker</h3>
-                                            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">Directly link Aadhaar, PAN, and Land Records</p>
-                                        </div>
-                                    </div>
-                                    <Button className=" hover:bg-blue-800 cursor-pointer text-white shrink-0 gap-2 whitespace-nowrap">
-                                        <RefreshCw className="size-4" />
-                                        Verify with DigiLocker
-                                    </Button>
-                                </div>
-                                <div className="flex items-start gap-2 px-1">
-                                    <ShieldCheck className="size-4 text-primary shrink-0 mt-0.5" />
-                                    <p className="text-sm text-gray-500"><span className="font-bold text-slate-900">Why use DigiLocker?</span> Retrieval is 80% faster and documents come <span className="text-primary font-bold">pre-verified</span> for immediate blockchain submission, bypassing manual inspection delays.</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 p-2">
-                                <div className="h-px flex-1 bg-gray-300" />
-                                <div className="shrink-0 text-sm text-gray-400 font-bold tracking-widest">OR MANUALLY UPLOAD</div>
-                                <div className="h-px flex-1 bg-gray-300" />
-                            </div>
-
-                            {/* Sale Deed */}
-                            <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
-                                <div className="flex items-center gap-4">
-                                    <div className="size-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                                        <FileText className="size-6" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-slate-900">Sale Deed</h3>
-                                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">Mandatory legal document for land registration.</p>
-                                    </div>
-                                </div>
-                                <div className="mt-auto">
-                                    <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200">
-                                        <div className="flex items-center gap-2">
-                                            <FileText className="size-4 text-blue-600 shrink-0" />
-                                            <span className="text-xs font-medium text-slate-700 truncate">Sale_Deed_v1.pdf</span>
-                                        </div>
-                                        <Trash2 className="size-4 text-red-500" />
-                                    </div>
-                                    <p className="text-xs font-bold text-green-600 mt-2 uppercase tracking-wider">Uploaded</p>
-                                </div>
-                            </div>
-
-                            {/* Tax Receipts */}
-                            <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
-                                <div className="flex items-center gap-4">
-                                    <div className="size-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
-                                        <CreditCard className="size-6" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-slate-900">Tax Receipts</h3>
-                                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">Upload latest property tax clearance receipts.</p>
-                                    </div>
-                                </div>
-                                <div className="mt-auto">
-                                    <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                                        <Upload className="size-4 text-slate-400" />
-                                        <span className="text-sm text-slate-500 font-medium">Upload File</span>
-                                        <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
-                                    </label>
-                                    <p className="text-xs font-bold text-amber-500 mt-2 uppercase tracking-wider">Pending</p>
-                                </div>
-                            </div>
-
-                            {/* Identity Proof */}
-                            <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
-                                <div className="flex items-center gap-4" >
-                                    <div className="size-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                                        <CreditCard className="size-6" />
-                                    </div>
-
-                                    <div>
-                                        <h3 className="font-bold text-slate-900">Aadhar Card</h3>
-                                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">Government issued ID for Identity Proof.</p>
-                                    </div>
-                                </div>
-                                <div className="mt-auto">
-                                    <div className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200">
-                                        <div className="flex items-center gap-2">
-                                            <CreditCard className="size-4 text-blue-600 shrink-0" />
-                                            <span className="text-xs font-medium text-slate-700 truncate">ID_Proof_Aadhar.jpg</span>
-                                        </div>
-                                        <Trash2 className="size-4 text-red-500" />
-                                    </div>
-                                    <p className="text-xs font-bold text-green-600 mt-2 uppercase tracking-wider">Uploaded</p>
-                                </div>
-                            </div>
-
-
-                            <div className="flex items-center gap-2 justify-center">
-                                <Info className="size-4 text-blue-600" />
-                                <p className="text-sm text-gray-500">Ensure all documents are clear and legible. Documents will be verified by the District Registrar's office.</p>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div className="lg:col-span-1 space-y-4">
-
-                        <div className="bg-white border border-gray-300 rounded-lg shadow-sm">
-                            <div className="w-full aspect-video overflow-hidden rounded-tl-md rounded-tr-md relative">
+                    {/* ── Left: Property summary (col-span-4) ── */}
+                    <div className="lg:col-span-4">
+                        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+                            <div className="aspect-4/3 relative">
                                 <img
                                     src="/images/property_front.jpg"
-                                    alt="property"
-                                    className="w-full h-full object-cover block"
+                                    alt="Property"
+                                    className="w-full h-full object-cover"
                                 />
-                                <div className="bg-primary p-2 absolute bottom-2 left-2 rounded-md text-white text-xs font-bold shadow-lg">BHU-9928-X</div>
-                            </div>
-
-
-                            <div className="p-4">
-                                <div className="font-bold">BHU-9928-X</div>
-                                <div className="flex items-center gap-1 text-slate-600 mt-1">
-                                    <MapPin className="size-3 text-slate-500" />
-                                    <p className="text-xs font-medium">Plot 42, Green Valley Residency, Sector 4, Bangalore East</p>
-                                </div>
-                                <div className="flex gap-2 items-center py-4">
-                                    <div className="p-2 rounded-md bg-background w-full">
-                                        <p className="text-xs text-gray-500 font-bold">TOTAL AREA</p>
-                                        <p className="text-lg text-black font-bold">2,500 sq.ft</p>
-                                    </div>
-                                    <div className="p-2 rounded-md bg-background w-full">
-                                        <p className="text-xs text-gray-500 font-bold">PRICE</p>
-                                        <p className="text-lg text-black font-bold">₹ 1.25 CR</p>
-                                    </div>
-                                </div>
-                                <div className="h-px w-full bg-gray-300" />
-
-                                <div className="space-y-2 mt-4">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm text-gray-500">Seller</p>
-                                        <p className="text-sm font-bold text-black">Shashwat Sahoo</p>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm text-gray-500">Registry Office</p>
-                                        <p className="text-sm font-bold text-black">Khandagiri</p>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm text-gray-500">Status</p>
-                                        <p className="text-sm font-bold text-saffron">Uploading Documents</p>
-                                    </div>
+                                <div className="absolute bottom-4 left-4">
+                                    <span className="bg-primary/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase">
+                                        Active Listing
+                                    </span>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="bg-green-500/10 rounded-xl p-4 border border-green-600/20">
-                            <div className="flex items-center gap-3">
-                                <Shield className="size-4 text-green-600 shrink-0" />
-                                <div>
-                                    <h5 className="text-sm font-bold text-black">Encryption Standard</h5>
+                            <div className="p-6">
+                                <div className="mb-6">
+                                    <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Property BhuID</p>
+                                    <h3 className="text-2xl font-black text-slate-900">{propertyId}</h3>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-start gap-3">
+                                        <MapPin className="w-[18px] h-[18px] text-primary shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Location</p>
+                                            <p className="text-sm font-medium text-slate-800">Plot 42, Green Valley Residency, Sector 4, Bangalore East</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <LayoutGrid className="w-[18px] h-[18px] text-primary shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Total Area</p>
+                                            <p className="text-sm font-medium text-slate-800">4,500 sq.ft. (Residential R-1)</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3">
+                                        <IndianRupee className="w-[18px] h-[18px] text-primary shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Estimated Valuation</p>
+                                            <p className="text-sm font-bold text-slate-900">₹2,45,00,000</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 pt-6 border-t border-slate-100 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                        <Shield className="w-[18px] h-[18px]" />
+                                    </div>
+                                    <p className="text-xs text-slate-500 italic leading-snug">
+                                        Verification of your digital identity is required before the offer is written to the blockchain ledger.
+                                    </p>
                                 </div>
                             </div>
-                            <p className="text-xs text-slate-600 mt-1 leading-relaxed flex items-center gap-2 font-semibold">
-                                <Check className="size-4 text-green-600" /> AES-256 Bit Data Encryption
-                            </p>
-                            <p className="text-xs text-slate-600 mt-1 leading-relaxed flex items-center gap-2 font-semibold">
-                                <Check className="size-4 text-green-600" /> IPFS Immutable Storage Hash
-                            </p>
-                            <p className="text-xs text-slate-600 mt-1 leading-relaxed flex items-center gap-2 font-semibold">
-                                <Check className="size-4 text-green-600" /> Digital Signature Verification
-                            </p>
-                        </div>
-
-
-                        {/* submit button  */}
-                        <Button asChild className="group w-full h-12">
-                            <Link href={`/marketplace/${propertyId}/success`}>
-                                Submit Documents
-                                <ArrowRight className="-ml-1 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                        </Button>
-
-                        {/* Need Assistance  */}
-                        <div className="bg-slate-900 text-white rounded-xl p-4 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16" />
-                            <h3 className="font-bold relative z-10">Need Assistance?</h3>
-                            <p className="text-xs text-slate-400 mt-2 relative z-10">
-                                Contact the district registrar office for documentation queries.
-                            </p>
-                            <button className="mt-4 flex items-center gap-2 text-sm font-bold text-primary relative z-10 group">
-                                Live Support
-                                <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
-                            </button>
                         </div>
                     </div>
+
+                    {/* ── Right: Form (col-span-8) ── */}
+                    <div className="lg:col-span-8">
+                        <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+                            <div className="mb-8">
+                                <h2 className="text-2xl font-bold text-slate-900">Make an Offer</h2>
+                                <p className="text-slate-500 mt-1">Submit your purchase proposal directly to the property&apos;s smart contract.</p>
+                            </div>
+
+                            <form className="space-y-6">
+
+                                {/* Name + Phone */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                            Full Name (as per Aadhar/PAN)
+                                        </label>
+                                        <div className="relative">
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-primary pointer-events-none" />
+                                            <Input type="text" placeholder="e.g. Arjun Kumar Sharma" className="pl-10" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                            Phone Number
+                                        </label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-primary pointer-events-none" />
+                                            <Input type="tel" placeholder="+91 98765 43210" className="pl-10" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Address */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                        Current Residential Address
+                                    </label>
+                                    <div className="relative">
+                                        <Home className="absolute left-3 top-3 w-[18px] h-[18px] text-primary pointer-events-none" />
+                                        <Textarea rows={2} placeholder="Enter your current legal residence" className="pl-10 resize-none" />
+                                    </div>
+                                </div>
+
+                                {/* Offer Price — featured block */}
+                                <div className="p-6 bg-primary/5 rounded-xl border border-primary/20 space-y-4">
+                                    <label className="text-sm font-bold text-primary uppercase tracking-widest block text-center">
+                                        Your Offer Price
+                                    </label>
+                                    <div className="relative max-w-sm mx-auto">
+                                        <span className="absolute inset-y-0 left-4 flex items-center text-2xl font-bold text-primary pointer-events-none select-none">
+                                            ₹
+                                        </span>
+                                        <input
+                                            type="number"
+                                            placeholder="0.00"
+                                            min={0}
+                                            className="w-full pl-10 pr-4 py-4 bg-white border-2 border-primary/30 rounded-xl text-3xl font-black text-slate-900 text-center focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-300"
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-center text-slate-500">
+                                        Your offer will be time-stamped and recorded on the BhuSetu Mainnet.
+                                    </p>
+                                </div>
+
+                                {/* Message */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                        Justification / Message to Seller
+                                    </label>
+                                    <Textarea
+                                        rows={4}
+                                        placeholder="Briefly describe your interest or terms (e.g., payment timeline, financing status)"
+                                        className="resize-none"
+                                    />
+                                </div>
+
+                                {/* Terms */}
+                                <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                    <Checkbox id="terms" className="mt-1 cursor-pointer" />
+                                    <label htmlFor="terms" className="text-xs text-slate-600 leading-relaxed cursor-pointer">
+                                        I understand that this offer, once submitted, is a formal expression of interest and will be stored on the BhuSetu blockchain ledger for auditability by the Department of Land Records.
+                                    </label>
+                                </div>
+
+                                {/* Submit */}
+                                <Button asChild className="group w-full h-12 text-base rounded-xl shadow-xl shadow-primary/20 gap-3">
+                                    <Link href={`/marketplace/${propertyId}/success`}>
+                                        Submit Offer
+                                        <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                                    </Link>
+                                </Button>
+
+                            
+                            </form>
+                        </div>
+                    </div>
+
                 </div>
             </MaxWidthWrapper>
             <Footer />
