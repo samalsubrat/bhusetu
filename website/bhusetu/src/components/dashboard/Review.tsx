@@ -1,18 +1,88 @@
 "use client"
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "../ui/button"
-import { Upload, FileText, Trash2, CreditCard, BadgeIndianRupee, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck } from "lucide-react"
+import { Upload, FileText, Trash2, CreditCard, BadgeIndianRupee, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck, Loader2 } from "lucide-react"
+
+declare global {
+    interface Window {
+        Razorpay: new (options: Record<string, unknown>) => { open: () => void }
+    }
+}
+
+const REGISTRATION_AMOUNT = 13950 // ₹13,950
+
+function loadRazorpayScript(): Promise<boolean> {
+    return new Promise((resolve) => {
+        if (document.getElementById('razorpay-script')) return resolve(true)
+        const script = document.createElement('script')
+        script.id = 'razorpay-script'
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+        script.onload = () => resolve(true)
+        script.onerror = () => resolve(false)
+        document.body.appendChild(script)
+    })
+}
 
 
 const Review = () => {
     const router = useRouter()
-    const handleNextStep = () => {
-        router.push('/dashboard/registration/documents')
-    }
+    const [isPaying, setIsPaying] = useState(false)
 
     const handlePreviousStep = () => {
         router.push('/dashboard/registration/location')
+    }
+
+    const handlePayment = async () => {
+        setIsPaying(true)
+        try {
+            const loaded = await loadRazorpayScript()
+            if (!loaded) {
+                alert('Failed to load payment gateway. Please check your connection.')
+                return
+            }
+
+            const orderRes = await fetch('/api/payment/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: REGISTRATION_AMOUNT, receipt: `bhusetu_${Date.now()}` }),
+            })
+            const { orderId, amount, currency } = await orderRes.json()
+
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount,
+                currency,
+                name: 'BhuSetu',
+                description: 'Property Registration Fee',
+                order_id: orderId,
+                handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+                    const verifyRes = await fetch('/api/payment/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(response),
+                    })
+                    const data = await verifyRes.json()
+                    if (data.success) {
+                        router.push('/dashboard/registration/success')
+                    } else {
+                        alert('Payment verification failed. Please contact support.')
+                    }
+                },
+                prefill: { name: '', email: '', contact: '' },
+                theme: { color: '#2563eb' },
+                modal: { ondismiss: () => setIsPaying(false) },
+            }
+
+            const rzp = new window.Razorpay(options)
+            rzp.open()
+        } catch (err) {
+            console.error('Payment error:', err)
+            alert('Something went wrong. Please try again.')
+        } finally {
+            setIsPaying(false)
+        }
     }
 
     return (
@@ -115,11 +185,12 @@ const Review = () => {
                                 <span className="font-bold text-primary">&#8377; 13,950</span>
                             </div>
                             <Button
-                                onClick={handleNextStep}
+                                onClick={handlePayment}
+                                disabled={isPaying}
                                 className="hover:cursor-pointer w-full py-4 rounded-lg text-md font-bold shadow-lg shadow-primary/25 gap-2"
                             >
-                                <BadgeIndianRupee className="size-5" />
-                                Pay & Register
+                                {isPaying ? <Loader2 className="size-4 animate-spin" /> : <BadgeIndianRupee className="size-5" />}
+                                {isPaying ? 'Processing...' : 'Pay & Register'}
                             </Button>
                         </div>
                     </div>
@@ -152,11 +223,12 @@ const Review = () => {
                                 Previous
                             </Button>
                             <Button
-                                onClick={handleNextStep}
+                                onClick={handlePayment}
+                                disabled={isPaying}
                                 className="hover:cursor-pointer w-full sm:w-auto px-10 py-3 rounded-lg font-bold shadow-lg shadow-primary/25 gap-2"
                             >
-                                Pay & Register
-                                <ChevronRight className="size-4" />
+                                {isPaying ? 'Processing...' : 'Pay & Register'}
+                                {isPaying ? <Loader2 className="size-4 animate-spin" /> : <ChevronRight className="size-4" />}
                             </Button>
                         </div>
                     </div>

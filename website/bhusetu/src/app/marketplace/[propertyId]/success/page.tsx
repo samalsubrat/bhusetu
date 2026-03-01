@@ -2,7 +2,7 @@ import { Footer } from '@/components/footer'
 import MaxWidthWrapper from '@/components/MaxWidthWrapper'
 import Navbar from '@/components/Navbar'
 import { Badge } from '@/components/ui/badge'
-import { ChevronRight, CloudCheck, FileText, Landmark } from 'lucide-react'
+import { CheckCircle2, ChevronRight, CloudCheck, FileText, Landmark } from 'lucide-react'
 import { Confetti } from '@/components/ui/confetti'
 import { Button } from '@/components/ui/button'
 
@@ -36,38 +36,37 @@ const page = () => {
                             Documents Received
                         </Badge>
                         <div className='md:px-32 space-y-4'>
-                            <h1 className='font-black text-4xl'>Documents submitted successflly, waiting for authority approval.</h1>
+                            <h1 className='font-black text-4xl'>Documents submitted successfully, waiting for authority approval.</h1>
                             <h2 className='text-gray-500 tracking-wide md:px-10'>Your application has been logged on the blockchain. The District Registrar's office will now verify the digital signatures and IPFS-linked documents.</h2>
                         </div>
                     </div>
 
-                    <div className='rounded-xl border-2 border-slate-200 bg-white p-4 space-y-4'>
-                        <div className="flex items-center justify-between">
-                            <div className='flex gap-4'>
-                                <div className="size-12 rounded-full bg-yellow-200 flex items-center justify-center text-yellow-600">
-                                    <FileText className="size-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-900">Authority Approval</h3>
-                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">Sub-Registrar review of submitted deeds and identity proofs. Est: 24-48 hours.</p>
-                                </div>
+                    <div className="rounded-xl border-2 border-slate-200 bg-white p-6 space-y-4">
+                    <h2 className="font-bold text-slate-900 text-sm uppercase tracking-wider">What Happens Next</h2>
+                    <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                            <div className="size-8 rounded-full bg-yellow-100 flex items-center justify-center shrink-0 mt-0.5">
+                                <FileText className="size-4 text-yellow-600" />
                             </div>
-                            <div className='bg-yellow-300/50 px-4 py-2 rounded-sm text-yellow-700 text-xs font-bold'>IN PROGRESS</div>
+                            <div>
+                                <p className="font-bold text-slate-900 text-sm">Authority Approval</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Sub-Registrar will review your submitted deeds and identity proofs. Est: 24-48 hours.</p>
+                            </div>
+                            <span className="ml-auto shrink-0 bg-yellow-200/60 px-2 py-1 rounded text-yellow-700 text-xs font-bold">IN PROGRESS</span>
                         </div>
-                        <div className='w-px h-10 bg-gray-300 ml-6 -mt-4 -mb-1'/>
-                        <div className="flex items-center justify-between">
-                            <div className='flex gap-4'>
-                                <div className="size-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                    <FileText className="size-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-900">Secure Payment</h3>
-                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">Digital stamp duty and final property settlement.</p>
-                                </div>
+                        <div className="w-px h-6 bg-slate-200 ml-4" />
+                        <div className="flex items-start gap-3 opacity-50">
+                            <div className="size-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                                <CheckCircle2 className="size-4 text-blue-600" />
                             </div>
-                            <div className='bg-blue-300/50 px-4 py-2 rounded-sm text-blue-700 text-xs font-bold'>PENDING</div>
+                            <div>
+                                <p className="font-bold text-slate-900 text-sm">Secure Payment & Final Settlement</p>
+                                <p className="text-xs text-slate-500 mt-0.5">Digital stamp duty payment and final property settlement.</p>
+                            </div>
+                            <span className="ml-auto shrink-0 bg-blue-100 px-2 py-1 rounded text-blue-600 text-xs font-bold">PENDING</span>
                         </div>
                     </div>
+                </div>
 
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6'>
                         <Button className='w-full shadow-sm hover:bg-gray-200 cursor-pointer' variant="outline"><Landmark/>Back to Home</Button>
