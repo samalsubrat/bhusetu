@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/hooks/use-auth"
 
 import {
   Sidebar,
@@ -47,7 +48,7 @@ const navigationItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const { user, logout } = ""
+  const { user, logout } = useAuth()
 
   return (
     <Sidebar

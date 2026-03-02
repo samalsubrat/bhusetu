@@ -1,8 +1,10 @@
+"use client"
 
 import Link from 'next/link'
 import { Landmark } from 'lucide-react'
 import { Button } from './ui/button'
 import MaxWidthWrapper from './MaxWidthWrapper';
+import { useAuth } from '@/hooks/use-auth'
 
 const navLinks = [
   { label: "MARKETPLACE", href: "/marketplace" },
@@ -10,6 +12,8 @@ const navLinks = [
 ];
 
 const Navbar = () => {
+  const { user, loading } = useAuth()
+
   return (
     <>
       <MaxWidthWrapper className='sticky z-50 top-6 '>
@@ -41,8 +45,14 @@ const Navbar = () => {
                 </Link>
               ))}
             </nav>
-            <Button className="font-bold rounded-full">
-              LOGIN
+            <Button className="font-bold rounded-full" asChild>
+              {loading ? (
+                <span className="opacity-50">...</span>
+              ) : user ? (
+                <Link href="/dashboard">DASHBOARD</Link>
+              ) : (
+                <Link href="/login">LOGIN</Link>
+              )}
             </Button>
           </div>
         </div >

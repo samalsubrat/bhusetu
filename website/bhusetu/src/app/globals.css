@@ -4,6 +4,7 @@
 @import "tailwindcss/utilities";  /* ← utilities last, always wins */
 
 
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

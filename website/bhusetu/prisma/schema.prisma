@@ -1,0 +1,191 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  AGRICULTURAL
+  APARTMENT
+  VILLA
+  OPEN_PLOT
+  ROW_HOUSE
+}
+
+enum PropertyStatus {
+  PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REGISTERED
+  REJECTED
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum UserRole {
+  OWNER
+  BUYER
+  ADMIN
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  role          UserRole  @default(OWNER)
+  isVerified    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  otps          Otp[]
+  sessions      Session[]
+  properties    Property[]
+  transactions  Transaction[] @relation("BuyerTransactions")
+
+  @@map("users")
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  code      String   // hashed OTP
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("otps")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model Property {
+  id           String         @id @default(cuid())
+  bhuSetuId    String         @unique // e.g. BHU-9928-X
+  title        String
+  description  String?
+  type         PropertyType
+  status       PropertyStatus @default(PENDING)
+
+  // Area & Price
+  areaSqFt     Float
+  priceInPaise BigInt         // stored in paise to avoid float issues
+
+  // Location
+  state        String
+  district     String
+  taluka       String?
+  village      String?
+  surveyNumber String?
+  latitude     Float?
+  longitude    Float?
+  geoJson      Json?          // GIS polygon data
+
+  // Owner
+  ownerId      String
+  owner        User           @relation(fields: [ownerId], references: [id])
+
+  // Timestamps
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  documents    Document[]
+  listings     PropertyListing[]
+  transactions Transaction[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([type])
+  @@map("properties")
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  name        String   // e.g. "Sale Deed", "Encumbrance Certificate"
+  cid         String   // IPFS CID from Pinata
+  mimeType    String?
+  sizeBytes   Int?
+
+  createdAt   DateTime @default(now())
+
+  @@index([propertyId])
+  @@map("documents")
+}
+
+model PropertyListing {
+  id           String   @id @default(cuid())
+  propertyId   String
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  listedPriceInPaise BigInt
+  isActive     Boolean  @default(true)
+  listedAt     DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@index([propertyId])
+  @@index([isActive])
+  @@map("property_listings")
+}
+
+model Transaction {
+  id              String            @id @default(cuid())
+  razorpayOrderId String            @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+
+  propertyId  String
+  property    Property         @relation(fields: [propertyId], references: [id])
+
+  listingId   String?
+  listing     PropertyListing? @relation(fields: [listingId], references: [id])
+
+  buyerId     String
+  buyer       User             @relation("BuyerTransactions", fields: [buyerId], references: [id])
+
+  amountInPaise BigInt
+  status        TransactionStatus @default(PENDING)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([buyerId])
+  @@index([status])
+  @@map("transactions")
+}

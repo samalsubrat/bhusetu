@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { Header } from "@/components/Navbar"
+import Header from "@/components/Navbar"
 import { Button } from "@/components/ui/button"
 import {
     MapPin,
