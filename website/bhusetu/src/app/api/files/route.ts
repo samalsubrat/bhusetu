@@ -17,8 +17,9 @@ export async function POST(request: NextRequest) {
     const encrypted = encrypt(plaintext);
 
     // Create a new File from the encrypted buffer
-    const encryptedBlob = new Blob([encrypted], { type: "application/octet-stream" });
-    const encryptedFile = new File([encryptedBlob], file.name, { type: "application/octet-stream" });
+// Create a new File from the encrypted buffer
+const encryptedBlob = new Blob([new Uint8Array(encrypted)], { type: "application/octet-stream" });    
+const encryptedFile = new File([encryptedBlob], file.name, { type: "application/octet-stream" });
 
     // Upload encrypted file to Pinata Private IPFS
     const upload = await pinata.upload.private

@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         const contentType = mimeType || "application/octet-stream";
         const filename = originalName || "document";
 
-        return new NextResponse(decrypted, {
+        return new NextResponse(new Uint8Array(decrypted), {
             status: 200,
             headers: {
                 "Content-Type": contentType,
