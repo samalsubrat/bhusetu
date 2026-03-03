@@ -43,8 +43,16 @@ const navigationItems = [
   { name: "Registration", href: "/dashboard/registration", icon: BadgePlus },
   { name: "Land Records", href: "/dashboard/medical-tests", icon: LandPlot },
   { name: "Transfer Requests", href: "/dashboard/water-tests", icon: RefreshCcw },
-  
 ]
+
+const ROLE_LABELS: Record<string, string> = {
+  CITIZEN: "Citizen",
+  REVENUE_INSPECTOR: "Revenue Inspector",
+  ADDITIONAL_TAHASILDAR: "Addl. Tahasildar",
+  TAHASILDAR: "Tahasildar",
+  COLLECTOR: "Collector",
+  ADMIN: "Admin",
+}
 
 export function AppSidebar() {
   const pathname = usePathname()
@@ -107,7 +115,7 @@ export function AppSidebar() {
                         {user?.name || user?.email?.split('@')[0] || 'User'}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {user?.role || 'Guest'}
+                        {user?.role ? (ROLE_LABELS[user.role] ?? user.role) : 'Guest'}
                       </span>
                     </div>
                   </div>

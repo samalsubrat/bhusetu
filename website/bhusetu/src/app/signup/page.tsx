@@ -16,7 +16,6 @@ export default function SignupPage() {
     phone: "",
     password: "",
     confirmPassword: "",
-    role: "OWNER",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
@@ -45,7 +44,6 @@ export default function SignupPage() {
       email: form.email,
       phone: form.phone || undefined,
       password: form.password,
-      role: form.role,
     })
 
     if (result.error) {
@@ -126,29 +124,6 @@ export default function SignupPage() {
                 placeholder="+91 98765 43210"
                 className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               />
-            </div>
-
-            {/* Role */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                I am a
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {(["OWNER", "BUYER"] as const).map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => update("role", role)}
-                    className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition ${
-                      form.role === role
-                        ? "border-blue-600 bg-blue-50 text-blue-700"
-                        : "border-slate-300 text-slate-600 hover:border-slate-400"
-                    }`}
-                  >
-                    {role === "OWNER" ? "Land Owner" : "Buyer"}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Password */}

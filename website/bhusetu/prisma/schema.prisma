@@ -38,8 +38,11 @@ enum TransactionStatus {
 }
 
 enum UserRole {
-  OWNER
-  BUYER
+  CITIZEN               // default for all new signups
+  REVENUE_INSPECTOR
+  ADDITIONAL_TAHASILDAR
+  TAHASILDAR
+  COLLECTOR
   ADMIN
 }
 
@@ -51,7 +54,7 @@ model User {
   passwordHash  String
   name          String
   phone         String?
-  role          UserRole  @default(OWNER)
+  role          UserRole  @default(CITIZEN)
   isVerified    Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

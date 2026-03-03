@@ -5,7 +5,7 @@ import { sendOtpEmail } from "@/lib/email"
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, name, phone, role } = await req.json()
+    const { email, password, name, phone } = await req.json()
 
     // ── Validate ────────────────────────────────────────────────────────────
     if (!email || !password || !name) {
@@ -33,8 +33,6 @@ export async function POST(req: NextRequest) {
 
     // ── Create user (unverified) ────────────────────────────────────────────
     const passwordHash = await hashPassword(password)
-    const validRoles = ["OWNER", "BUYER"]
-    const userRole = validRoles.includes(role) ? role : "OWNER"
 
     const user = await prisma.user.create({
       data: {
@@ -42,7 +40,7 @@ export async function POST(req: NextRequest) {
         passwordHash,
         name,
         phone: phone || null,
-        role: userRole,
+        role: "CITIZEN", // all new users start as Citizen; admins assign roles
         isVerified: false,
       },
     })

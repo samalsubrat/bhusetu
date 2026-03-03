@@ -17,7 +17,7 @@ export interface AuthUser {
   email: string
   name: string
   phone: string | null
-  role: "OWNER" | "BUYER" | "ADMIN"
+  role: "CITIZEN" | "REVENUE_INSPECTOR" | "ADDITIONAL_TAHASILDAR" | "TAHASILDAR" | "COLLECTOR" | "ADMIN"
   isVerified: boolean
   createdAt: string
 }
@@ -38,7 +38,6 @@ interface SignupData {
   password: string
   name: string
   phone?: string
-  role?: string
 }
 
 interface LoginResult {
