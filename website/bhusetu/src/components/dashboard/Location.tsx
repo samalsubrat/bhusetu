@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { ChevronRight, ChevronLeft, Loader2, MapPin, ShieldCheck, ArrowRight } from "lucide-react"
 import { usePincode } from "@/hooks/use-location-data"
+import { useRegistration } from "@/context/RegistrationContext"
+import RegistrationFeeSidebar from "@/components/dashboard/RegistrationFeeSidebar"
 
 import {
     Combobox,
@@ -30,7 +32,8 @@ const GISMap = dynamic(() => import("@/components/dashboard/GISMap"), {
 
 const Location = () => {
     const router = useRouter()
-    const [pincode, setPincode] = useState("")
+    const { data: regData, updateField, updateFields } = useRegistration()
+    const [pincode, setPincode] = useState(regData.pincode)
     const [boundary, setBoundary] = useState<GeoJSON.FeatureCollection | null>(null)
     const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null)
     const [gpsLoading, setGpsLoading] = useState(false)
@@ -41,6 +44,7 @@ const Location = () => {
     const handlePincodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.replace(/\D/g, "").slice(0, 6)
         setPincode(value)
+        updateField("pincode", value)
     }
 
     const handleGpsLocate = () => {
@@ -65,6 +69,7 @@ const Location = () => {
                     const postcode = geo?.address?.postcode
                     if (postcode && /^\d{6}$/.test(postcode)) {
                         setPincode(postcode)
+                        updateField("pincode", postcode)
                     }
                 } catch {
                     // Reverse geocoding failed silently — user can still type pincode
@@ -196,6 +201,14 @@ const Location = () => {
                                 value={data?.state ?? ""}
                                 readOnly
                                 className="bg-slate-50"
+                                onChange={() => {
+                                    if (data?.state) updateField("state", data.state)
+                                }}
+                                ref={(el) => {
+                                    if (el && data?.state && regData.state !== data.state) {
+                                        updateField("state", data.state)
+                                    }
+                                }}
                             />
                         </Field>
                         <Field>
@@ -209,6 +222,11 @@ const Location = () => {
                                 value={data?.district ?? ""}
                                 readOnly
                                 className="bg-slate-50"
+                                ref={(el) => {
+                                    if (el && data?.district && regData.district !== data.district) {
+                                        updateField("district", data.district)
+                                    }
+                                }}
                             />
                         </Field>
                         <Field>
@@ -294,24 +312,8 @@ const Location = () => {
                     </div>
                 </div>
 
-                {/* Registration Fee */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-                    <h3 className="font-bold text-slate-900 mb-4">Registration Fee</h3>
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Processing Fee</span>
-                            <span className="font-semibold">&#8377; 1,500</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Stamp Duty (Estimated)</span>
-                            <span className="font-semibold">&#8377; 12,450</span>
-                        </div>
-                        <div className="pt-3 border-t border-slate-100 flex justify-between">
-                            <span className="font-bold text-slate-900">Total</span>
-                            <span className="font-bold text-primary">&#8377; 13,950</span>
-                        </div>
-                    </div>
-                </div>
+                {/* Dynamic Registration Fee */}
+                <RegistrationFeeSidebar />
 
                 {/* Need Assistance */}
                 <div className="bg-slate-900 text-white rounded-xl p-4 relative overflow-hidden">

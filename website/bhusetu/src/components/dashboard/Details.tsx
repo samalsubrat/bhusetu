@@ -19,6 +19,9 @@ import {
     ArrowRight,
 } from "lucide-react"
 
+import { useRegistration } from "@/context/RegistrationContext"
+import RegistrationFeeSidebar from "@/components/dashboard/RegistrationFeeSidebar"
+
 const categories = [
     "Residential",
     "Green Zone",
@@ -35,15 +38,16 @@ const tax = [
 
 const Details = () => {
     const router = useRouter()
+    const { data, updateField } = useRegistration()
 
     const handleNextStep = () => {
         router.push('/dashboard/registration/location')
     }
-    
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Forms */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-2 space-y-6">
                 {/* Property Details */}
                 <div className='p-6 bg-white border border-gray-300 rounded-lg shadow-sm '>
                     <h2 className='text-black text-xs md:text-sm font-semibold pb-4  w-full'>PROPERTY INFORMATION</h2>
@@ -51,24 +55,36 @@ const Details = () => {
                     <h2 className='text-gray-500 text-sm mt-4'>Specify details about your plot.</h2>
                     <div className='grid grid-cols-2 gap-4 mt-4'>
                         <Field>
-                            <FieldLabel htmlFor="input-required" className='text-xs -mb-1 text-gray-500'>LEGAL OWNER NAME<span className="text-destructive">*</span></FieldLabel>
+                            <FieldLabel htmlFor="owner-name" className='text-xs -mb-1 text-gray-500'>LEGAL OWNER NAME<span className="text-destructive">*</span></FieldLabel>
                             <Input
-                                id="input-required"
+                                id="owner-name"
                                 type="text"
                                 placeholder="Enter your name"
+                                value={data.ownerName}
+                                onChange={(e) => updateField("ownerName", e.target.value)}
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="input-required" className='text-xs -mb-1 text-gray-500'>LAND AREA<span className="text-destructive">*</span></FieldLabel>
+                            <FieldLabel htmlFor="land-area" className='text-xs -mb-1 text-gray-500'>LAND AREA (sqft)<span className="text-destructive">*</span></FieldLabel>
                             <Input
-                                id="input-required"
+                                id="land-area"
                                 type="text"
+                                inputMode="numeric"
                                 placeholder="Enter the land area in sqft"
+                                value={data.landArea}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^\d.]/g, "")
+                                    updateField("landArea", val)
+                                }}
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="input-required" className='text-xs -mb-1 text-gray-500'>LATEST TAX PAID<span className="text-destructive">*</span></FieldLabel>
-                            <Combobox items={tax}>
+                            <FieldLabel htmlFor="tax-paid" className='text-xs -mb-1 text-gray-500'>LATEST TAX PAID<span className="text-destructive">*</span></FieldLabel>
+                            <Combobox
+                                items={tax}
+                                value={data.taxPaid}
+                                onValueChange={(val) => updateField("taxPaid", val ?? "")}
+                            >
                                 <ComboboxInput placeholder="Yes or No" />
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
@@ -83,8 +99,12 @@ const Details = () => {
                             </Combobox>
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="input-required" className='text-xs -mb-1 text-gray-500'>CATEGORY / TYPE<span className="text-destructive">*</span></FieldLabel>
-                            <Combobox items={categories}>
+                            <FieldLabel htmlFor="category" className='text-xs -mb-1 text-gray-500'>CATEGORY / TYPE<span className="text-destructive">*</span></FieldLabel>
+                            <Combobox
+                                items={categories}
+                                value={data.category}
+                                onValueChange={(val) => updateField("category", val ?? "")}
+                            >
                                 <ComboboxInput placeholder="Select a category" />
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
@@ -108,35 +128,43 @@ const Details = () => {
                     <h2 className='text-gray-500 text-sm mt-4'>Specify neighboring plot details to establish property boundaries.</h2>
                     <div className='grid grid-cols-2 gap-4 mt-4'>
                         <Field>
-                            <FieldLabel htmlFor="input-required" className='text-xs -mb-1 text-gray-500'>NORTH BOUNDARY<span className="text-destructive">*</span></FieldLabel>
+                            <FieldLabel htmlFor="north-boundary" className='text-xs -mb-1 text-gray-500'>NORTH BOUNDARY<span className="text-destructive">*</span></FieldLabel>
                             <Input
-                                id="input-required"
+                                id="north-boundary"
                                 type="text"
                                 placeholder="Neighboring Plot Name"
+                                value={data.northBoundary}
+                                onChange={(e) => updateField("northBoundary", e.target.value)}
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="input-required" className='text-xs -mb-1 text-gray-500'>SOUTH BOUNDARY<span className="text-destructive">*</span></FieldLabel>
+                            <FieldLabel htmlFor="south-boundary" className='text-xs -mb-1 text-gray-500'>SOUTH BOUNDARY<span className="text-destructive">*</span></FieldLabel>
                             <Input
-                                id="input-required"
+                                id="south-boundary"
                                 type="text"
                                 placeholder="Neighboring Plot Name"
+                                value={data.southBoundary}
+                                onChange={(e) => updateField("southBoundary", e.target.value)}
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="input-required" className='text-xs -mb-1 text-gray-500'>EAST BOUNDARY<span className="text-destructive">*</span></FieldLabel>
+                            <FieldLabel htmlFor="east-boundary" className='text-xs -mb-1 text-gray-500'>EAST BOUNDARY<span className="text-destructive">*</span></FieldLabel>
                             <Input
-                                id="input-required"
+                                id="east-boundary"
                                 type="text"
                                 placeholder="Neighboring Plot Name"
+                                value={data.eastBoundary}
+                                onChange={(e) => updateField("eastBoundary", e.target.value)}
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="input-required" className='text-xs -mb-1 text-gray-500'>WEST BOUNDARY<span className="text-destructive">*</span></FieldLabel>
+                            <FieldLabel htmlFor="west-boundary" className='text-xs -mb-1 text-gray-500'>WEST BOUNDARY<span className="text-destructive">*</span></FieldLabel>
                             <Input
-                                id="input-field-username"
+                                id="west-boundary"
                                 type="text"
                                 placeholder="Neighboring Plot Name"
+                                value={data.westBoundary}
+                                onChange={(e) => updateField("westBoundary", e.target.value)}
                             />
                         </Field>
                     </div>
@@ -144,7 +172,7 @@ const Details = () => {
             </div>
 
             {/* Right Sidebar */}
-            <div className="space-y-4 flex flex-col justify-between">
+            <div className="lg:col-span-1 space-y-6">
                 {/* Blockchain Security */}
                 <div className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
                     <div className="flex items-center gap-2 mb-4 text-primary">
@@ -164,24 +192,8 @@ const Details = () => {
                     </div>
                 </div>
 
-                {/* Registration Fee */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-                    <h3 className="font-bold text-slate-900 mb-4">Registration Fee</h3>
-                    <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Processing Fee</span>
-                            <span className="font-semibold">&#8377; 1,500</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Stamp Duty (Estimated)</span>
-                            <span className="font-semibold">&#8377; 12,450</span>
-                        </div>
-                        <div className="pt-3 border-t border-slate-100 flex justify-between">
-                            <span className="font-bold text-slate-900">Total</span>
-                            <span className="font-bold text-primary">&#8377; 13,950</span>
-                        </div>
-                    </div>
-                </div>
+                {/* Dynamic Registration Fee */}
+                <RegistrationFeeSidebar />
 
                 {/* Need Assistance */}
                 <div className="bg-slate-900 text-white rounded-xl p-4 relative overflow-hidden">

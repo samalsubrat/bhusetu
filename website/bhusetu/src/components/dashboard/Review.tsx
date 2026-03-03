@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "../ui/button"
 import { Upload, FileText, Trash2, CreditCard, BadgeIndianRupee, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck, Loader2 } from "lucide-react"
+import { useRegistration } from "@/context/RegistrationContext"
+import { calculateProcessingFee, calculateStampDuty } from "@/lib/registration-fees"
+import RegistrationFeeSidebar from "@/components/dashboard/RegistrationFeeSidebar"
 
 declare global {
     interface Window {
@@ -11,7 +14,7 @@ declare global {
     }
 }
 
-const REGISTRATION_AMOUNT = 13950 // ₹13,950
+
 
 function loadRazorpayScript(): Promise<boolean> {
     return new Promise((resolve) => {
@@ -29,6 +32,13 @@ function loadRazorpayScript(): Promise<boolean> {
 const Review = () => {
     const router = useRouter()
     const [isPaying, setIsPaying] = useState(false)
+    const { data: regData } = useRegistration()
+
+    const landAreaNum = parseFloat(regData.landArea) || 0
+    const taxPaid = regData.taxPaid === "Yes"
+    const processingFee = calculateProcessingFee(landAreaNum, regData.category, taxPaid)
+    const stampDuty = calculateStampDuty(regData.district)
+    const totalAmount = processingFee + stampDuty
 
     const handlePreviousStep = () => {
         router.push('/dashboard/registration/location')
@@ -46,7 +56,7 @@ const Review = () => {
             const orderRes = await fetch('/api/payment/create-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: REGISTRATION_AMOUNT, receipt: `bhusetu_${Date.now()}` }),
+                body: JSON.stringify({ amount: totalAmount, receipt: `bhusetu_${Date.now()}` }),
             })
             const { orderId, amount, currency } = await orderRes.json()
 
@@ -168,32 +178,8 @@ const Review = () => {
                         </div>
                     </div>
 
-                    {/* Registration Fee */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-                        <h3 className="font-bold text-slate-900 mb-4">Registration Fee</h3>
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Processing Fee</span>
-                                <span className="font-semibold">&#8377; 1,500</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Stamp Duty (Estimated)</span>
-                                <span className="font-semibold">&#8377; 12,450</span>
-                            </div>
-                            <div className="pt-3 border-t border-slate-100 flex justify-between">
-                                <span className="font-bold text-slate-900">Total</span>
-                                <span className="font-bold text-primary">&#8377; 13,950</span>
-                            </div>
-                            <Button
-                                onClick={handlePayment}
-                                disabled={isPaying}
-                                className="hover:cursor-pointer w-full py-4 rounded-lg text-md font-bold shadow-lg shadow-primary/25 gap-2"
-                            >
-                                {isPaying ? <Loader2 className="size-4 animate-spin" /> : <BadgeIndianRupee className="size-5" />}
-                                {isPaying ? 'Processing...' : 'Pay & Register'}
-                            </Button>
-                        </div>
-                    </div>
+                    {/* Dynamic Registration Fee */}
+                    <RegistrationFeeSidebar />
 
                     {/* Need Assistance */}
                     <div className="bg-slate-900 text-white rounded-xl p-4 relative overflow-hidden">

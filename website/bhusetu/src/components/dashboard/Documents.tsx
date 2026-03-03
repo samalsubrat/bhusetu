@@ -1,13 +1,24 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from 'next/navigation'
 import { Button } from "../ui/button"
-import { Upload, FileText, Trash2, CreditCard, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck, MapPin, RefreshCw } from "lucide-react"
+import { Upload, FileText, Trash2, CreditCard, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck, Loader2, ExternalLink, Lock } from "lucide-react"
+import RegistrationFeeSidebar from "@/components/dashboard/RegistrationFeeSidebar"
 
+interface UploadedFile {
+    id: string
+    cid: string
+    name: string
+    size: number
+    mimeType: string
+}
 
 const Documents = () => {
     const router = useRouter()
+    const fileInputRef = useRef<HTMLInputElement>(null)
+    const dropzoneInputRef = useRef<HTMLInputElement>(null)
+
     const handleNextStep = () => {
         router.push('/dashboard/registration/review')
     }
@@ -16,37 +27,106 @@ const Documents = () => {
         router.push('/dashboard/registration/location')
     }
 
-    const [file, setFile] = useState<File>();
-    const [url, setUrl] = useState("");
-    const [uploading, setUploading] = useState(false);
+    const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
+    const [uploading, setUploading] = useState(false)
+    const [openingFile, setOpeningFile] = useState<string | null>(null)
 
-    const uploadFile = async () => {
+    const uploadFile = async (file: File) => {
         try {
-            if (!file) {
-                alert("No file selected");
-                return;
-            }
-
-            setUploading(true);
-            const data = new FormData();
-            data.set("file", file);
-            const uploadRequest = await fetch("/api/files", {
+            setUploading(true)
+            const data = new FormData()
+            data.set("file", file)
+            const res = await fetch("/api/files", {
                 method: "POST",
                 body: data,
-            });
-            const signedUrl = await uploadRequest.json();
-            setUrl(signedUrl);
-            setUploading(false);
+            })
+            if (!res.ok) throw new Error("Upload failed")
+            const result = await res.json()
+            setUploadedFiles((prev) => [
+                ...prev,
+                {
+                    id: result.id,
+                    cid: result.cid,
+                    name: result.name,
+                    size: result.size,
+                    mimeType: result.mimeType,
+                },
+            ])
         } catch (e) {
-            console.log(e);
-            setUploading(false);
-            alert("Trouble uploading file");
+            console.error(e)
+            alert("Failed to upload file. Please try again.")
+        } finally {
+            setUploading(false)
         }
-    };
+    }
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFile(e.target?.files?.[0]);
-    };
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target?.files?.[0]
+        if (file) await uploadFile(file)
+        // Reset input so the same file can be selected again
+        e.target.value = ""
+    }
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault()
+        const file = e.dataTransfer.files?.[0]
+        if (file) await uploadFile(file)
+    }
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault()
+    }
+
+    const handleRemoveFile = async (fileId: string, cid: string) => {
+        try {
+            await fetch("/api/files", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids: [fileId] }),
+            })
+            setUploadedFiles((prev) => prev.filter((f) => f.cid !== cid))
+        } catch (e) {
+            console.error(e)
+            alert("Failed to delete file. Please try again.")
+        }
+    }
+
+    const handleOpenFile = async (file: UploadedFile) => {
+        try {
+            setOpeningFile(file.cid)
+            const res = await fetch("/api/files/view", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: file.id,
+                    cid: file.cid,
+                    originalName: file.name,
+                    mimeType: file.mimeType,
+                }),
+            })
+            if (!res.ok) throw new Error("Failed to decrypt file")
+            const blob = await res.blob()
+            const blobUrl = URL.createObjectURL(blob)
+            window.open(blobUrl, "_blank", "noopener,noreferrer")
+        } catch (e) {
+            console.error(e)
+            alert("Failed to open file. Please try again.")
+        } finally {
+            setOpeningFile(null)
+        }
+    }
+
+    const formatFileSize = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    }
+
+    const getFileIcon = (mimeType: string) => {
+        if (mimeType.includes("pdf")) return <FileText className="size-4 text-red-500 shrink-0" />
+        if (mimeType.includes("image")) return <CreditCard className="size-4 text-blue-500 shrink-0" />
+        return <FileText className="size-4 text-primary shrink-0" />
+    }
 
     return (
         <>
@@ -56,36 +136,7 @@ const Documents = () => {
                 {/* Left Panel  */}
                 <div className="lg:col-span-2 space-y-6">
 
-                    {/* Digilocker 
-                    <div className="relative p-4 rounded-xl border-4 border-blue-400 bg-white flex flex-col gap-3">
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="size-12 rounded-xl bg-[#2E7D32] flex items-center justify-center shrink-0">
-                                    <MapPin className="size-5 text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-900">Quick Fetch with DigiLocker</h3>
-                                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">Directly link Aadhaar, PAN, and Land Records</p>
-                                </div>
-                            </div>
-                            <Button className=" hover:bg-blue-800 cursor-pointer text-white shrink-0 gap-2 whitespace-nowrap">
-                                <RefreshCw className="size-4" />
-                                Verify with DigiLocker
-                            </Button>
-                        </div>
-                        <div className="flex items-start gap-2 px-1">
-                            <ShieldCheck className="size-4 text-primary shrink-0 mt-0.5" />
-                            <p className="text-sm text-gray-500"><span className="font-bold text-slate-900">Why use DigiLocker?</span> Retrieval is 80% faster and documents come <span className="text-primary font-bold">pre-verified</span> for immediate blockchain submission, bypassing manual inspection delays.</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 p-2">
-                        <div className="h-px flex-1 bg-gray-300" />
-                        <div className="shrink-0 text-sm text-gray-400 font-bold tracking-widest">OR MANUALLY UPLOAD</div>
-                        <div className="h-px flex-1 bg-gray-300" />
-                    </div> */}
-
-                    {/* cards  */}
+                    {/* Document Type Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Sale Deed */}
                         <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
@@ -93,20 +144,22 @@ const Documents = () => {
                                 <div className="size-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
                                     <FileText className="size-6" />
                                 </div>
-                                <div className="size-6 rounded-full bg-green-500 flex items-center justify-center">
-                                    <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                </div>
+                                {uploadedFiles.some(f => f.name.toLowerCase().includes("sale") || f.name.toLowerCase().includes("deed")) ? (
+                                    <div className="size-6 rounded-full bg-green-500 flex items-center justify-center">
+                                        <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    </div>
+                                ) : null}
                             </div>
                             <div>
                                 <h3 className="font-bold text-slate-900">Sale Deed</h3>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">Mandatory legal document for land registration.</p>
                             </div>
                             <div className="mt-auto pt-2">
-                                <div className="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200">
-                                    <FileText className="size-4 text-blue-600 shrink-0" />
-                                    <span className="text-xs font-medium text-slate-700 truncate">Sale_Deed_v1.pdf</span>
-                                </div>
-                                <p className="text-xs font-bold text-green-600 mt-2 uppercase tracking-wider">Uploaded</p>
+                                <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                                    <Upload className="size-4 text-slate-400" />
+                                    <span className="text-sm text-slate-500 font-medium">Upload File</span>
+                                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} />
+                                </label>
                             </div>
                         </div>
 
@@ -116,6 +169,11 @@ const Documents = () => {
                                 <div className="size-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
                                     <CreditCard className="size-6" />
                                 </div>
+                                {uploadedFiles.some(f => f.name.toLowerCase().includes("tax") || f.name.toLowerCase().includes("receipt")) ? (
+                                    <div className="size-6 rounded-full bg-green-500 flex items-center justify-center">
+                                        <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    </div>
+                                ) : null}
                             </div>
                             <div>
                                 <h3 className="font-bold text-slate-900">Tax Receipts</h3>
@@ -125,9 +183,8 @@ const Documents = () => {
                                 <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                                     <Upload className="size-4 text-slate-400" />
                                     <span className="text-sm text-slate-500 font-medium">Upload File</span>
-                                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} />
+                                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} />
                                 </label>
-                                <p className="text-xs font-bold text-amber-500 mt-2 uppercase tracking-wider">Pending</p>
                             </div>
                         </div>
 
@@ -137,57 +194,104 @@ const Documents = () => {
                                 <div className="size-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
                                     <CreditCard className="size-6" />
                                 </div>
-                                <div className="size-6 rounded-full bg-green-500 flex items-center justify-center">
-                                    <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                </div>
+                                {uploadedFiles.some(f => f.name.toLowerCase().includes("aadhar") || f.name.toLowerCase().includes("aadhaar") || f.name.toLowerCase().includes("id")) ? (
+                                    <div className="size-6 rounded-full bg-green-500 flex items-center justify-center">
+                                        <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    </div>
+                                ) : null}
                             </div>
                             <div>
                                 <h3 className="font-bold text-slate-900">Aadhar Card</h3>
                                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">Government issued ID for Identity Proof.</p>
                             </div>
                             <div className="mt-auto pt-2">
-                                <div className="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200">
-                                    <CreditCard className="size-4 text-blue-600 shrink-0" />
-                                    <span className="text-xs font-medium text-slate-700 truncate">ID_Proof_Aadhar.jpg</span>
-                                </div>
-                                <p className="text-xs font-bold text-green-600 mt-2 uppercase tracking-wider">Uploaded</p>
+                                <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                                    <Upload className="size-4 text-slate-400" />
+                                    <span className="text-sm text-slate-500 font-medium">Upload File</span>
+                                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} />
+                                </label>
                             </div>
                         </div>
                     </div>
+
+                    {/* Drag & Drop + Uploaded Files */}
                     <section className="p-6 bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden">
-                        <h2 className='text-black text-xs md:text-sm font-semibold pb-4  w-full'>REQUIRED DOCUMENTS</h2>
+                        <h2 className='text-black text-xs md:text-sm font-semibold pb-4 w-full'>UPLOAD DOCUMENTS</h2>
                         <div className='h-px bg-slate-300 -mx-6' />
                         <div className="pt-6">
-                            <div className="border-2 border-dashed border-slate-200 rounded-lg p-10 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-primary/5 hover:border-primary transition-colors cursor-pointer group">
+                            <div
+                                className="border-2 border-dashed border-slate-200 rounded-lg p-10 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-primary/5 hover:border-primary transition-colors cursor-pointer group"
+                                onDrop={handleDrop}
+                                onDragOver={handleDragOver}
+                                onClick={() => dropzoneInputRef.current?.click()}
+                            >
                                 <div className="size-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/10 transition-colors mb-4">
-                                    <Upload className="size-8" />
+                                    {uploading ? <Loader2 className="size-8 animate-spin" /> : <Upload className="size-8" />}
                                 </div>
-                                <p className="text-lg font-bold text-slate-900">Drag and drop any other documents</p>
-                                <p className="text-sm text-slate-500 mt-1">PDF, JPG or PNG (Max 1MB each)</p>
-                                <Button variant="outline" className="mt-6 rounded-lg font-bold">
-                                    Browse Files
-                                </Button>
+                                <p className="text-lg font-bold text-slate-900">
+                                    {uploading ? "Encrypting & uploading..." : "Drag and drop documents"}
+                                </p>
+                                <p className="text-sm text-slate-500 mt-1">PDF, JPG or PNG (Max 10MB each)</p>
+                                <div className="flex items-center gap-1.5 mt-2 text-xs text-primary font-medium">
+                                    <Lock className="size-3" />
+                                    Files are encrypted before upload to IPFS
+                                </div>
+                                {!uploading && (
+                                    <Button variant="outline" className="mt-6 rounded-lg font-bold" onClick={(e) => { e.stopPropagation(); dropzoneInputRef.current?.click() }}>
+                                        Browse Files
+                                    </Button>
+                                )}
+                                <input
+                                    ref={dropzoneInputRef}
+                                    type="file"
+                                    className="hidden"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={handleFileSelect}
+                                />
                             </div>
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <FileText className="size-5 text-primary" />
-                                        <span className="text-sm font-medium">Sale_Deed_v1.pdf</span>
+
+                            {/* Uploaded Files List */}
+                            {uploadedFiles.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                        Uploaded ({uploadedFiles.length} file{uploadedFiles.length !== 1 ? "s" : ""})
+                                    </p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {uploadedFiles.map((f) => (
+                                            <div
+                                                key={f.cid}
+                                                className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-primary/30 transition-colors group/file"
+                                            >
+                                                <button
+                                                    onClick={() => handleOpenFile(f)}
+                                                    className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
+                                                    title="Click to view document"
+                                                >
+                                                    {getFileIcon(f.mimeType)}
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className="text-sm font-medium truncate block group-hover/file:text-primary transition-colors">
+                                                            {f.name}
+                                                        </span>
+                                                        <span className="text-xs text-slate-400">{formatFileSize(f.size)}</span>
+                                                    </div>
+                                                    {openingFile === f.cid ? (
+                                                        <Loader2 className="size-4 animate-spin text-primary shrink-0" />
+                                                    ) : (
+                                                        <ExternalLink className="size-4 text-slate-300 group-hover/file:text-primary shrink-0 transition-colors" />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRemoveFile(f.id, f.cid)}
+                                                    className="text-slate-300 hover:text-red-500 transition-colors ml-2 cursor-pointer shrink-0"
+                                                    title="Remove file"
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <button className="text-slate-400 hover:text-red-500 transition-colors">
-                                        <Trash2 className="size-4" />
-                                    </button>
                                 </div>
-                                <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <CreditCard className="size-5 text-primary" />
-                                        <span className="text-sm font-medium">ID_Proof_Aadhar.jpg</span>
-                                    </div>
-                                    <button className="text-slate-400 hover:text-red-500 transition-colors">
-                                        <Trash2 className="size-4" />
-                                    </button>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </section>
                 </div>
@@ -215,39 +319,23 @@ const Documents = () => {
                         </div>
                     </div>
 
-                    {/* location verification  */}
+                    {/* Encryption Info */}
                     <div className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
                         <div className="flex items-start gap-4">
                             <div className="p-1.5 bg-blue-100 rounded-lg">
-                                <ChevronRight className="size-5 text-blue-600" />
+                                <Lock className="size-5 text-blue-600" />
                             </div>
                             <div className="flex flex-col gap-2">
-                                <h3 className="text-sm font-bold text-slate-900">Location Verification</h3>
+                                <h3 className="text-sm font-bold text-slate-900">Encrypted Storage</h3>
                                 <p className="text-xs text-slate-600 leading-relaxed">
-                                    Provide accurate location details. This information will be verified against official records and satellite mapping.
+                                    All documents are encrypted before being uploaded to IPFS via Pinata&apos;s private network. Only authorized parties can access them via time-limited signed URLs.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Registration Fee */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-                        <h3 className="font-bold text-slate-900 mb-4">Registration Fee</h3>
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Processing Fee</span>
-                                <span className="font-semibold">&#8377; 1,500</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Stamp Duty (Estimated)</span>
-                                <span className="font-semibold">&#8377; 12,450</span>
-                            </div>
-                            <div className="pt-3 border-t border-slate-100 flex justify-between">
-                                <span className="font-bold text-slate-900">Total</span>
-                                <span className="font-bold text-primary">&#8377; 13,950</span>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Dynamic Registration Fee */}
+                    <RegistrationFeeSidebar />
 
                     {/* Need Assistance */}
                     <div className="bg-slate-900 text-white rounded-xl p-4 relative overflow-hidden">
