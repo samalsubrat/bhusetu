@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -19,7 +20,7 @@ import {
     ArrowRight,
 } from "lucide-react"
 
-import { useRegistration } from "@/context/RegistrationContext"
+import { useRegistration, validateDetailsStep, type ValidationErrors } from "@/context/RegistrationContext"
 import RegistrationFeeSidebar from "@/components/dashboard/RegistrationFeeSidebar"
 
 const categories = [
@@ -39,8 +40,12 @@ const tax = [
 const Details = () => {
     const router = useRouter()
     const { data, updateField } = useRegistration()
+    const [errors, setErrors] = useState<ValidationErrors>({})
 
     const handleNextStep = () => {
+        const validationErrors = validateDetailsStep(data)
+        setErrors(validationErrors)
+        if (Object.keys(validationErrors).length > 0) return
         router.push('/dashboard/registration/location')
     }
 
@@ -61,8 +66,10 @@ const Details = () => {
                                 type="text"
                                 placeholder="Enter your name"
                                 value={data.ownerName}
-                                onChange={(e) => updateField("ownerName", e.target.value)}
+                                onChange={(e) => { updateField("ownerName", e.target.value); setErrors(prev => ({ ...prev, ownerName: "" })) }}
+                                className={errors.ownerName ? "border-red-500" : ""}
                             />
+                            {errors.ownerName && <p className="text-xs text-red-500 mt-1">{errors.ownerName}</p>}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="land-area" className='text-xs -mb-1 text-gray-500'>LAND AREA (sqft)<span className="text-destructive">*</span></FieldLabel>
@@ -75,17 +82,20 @@ const Details = () => {
                                 onChange={(e) => {
                                     const val = e.target.value.replace(/[^\d.]/g, "")
                                     updateField("landArea", val)
+                                    setErrors(prev => ({ ...prev, landArea: "" }))
                                 }}
+                                className={errors.landArea ? "border-red-500" : ""}
                             />
+                            {errors.landArea && <p className="text-xs text-red-500 mt-1">{errors.landArea}</p>}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="tax-paid" className='text-xs -mb-1 text-gray-500'>LATEST TAX PAID<span className="text-destructive">*</span></FieldLabel>
                             <Combobox
                                 items={tax}
                                 value={data.taxPaid}
-                                onValueChange={(val) => updateField("taxPaid", val ?? "")}
+                                onValueChange={(val) => { updateField("taxPaid", val ?? ""); setErrors(prev => ({ ...prev, taxPaid: "" })) }}
                             >
-                                <ComboboxInput placeholder="Yes or No" />
+                                <ComboboxInput placeholder="Yes or No" className={errors.taxPaid ? "border-red-500" : ""} />
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
                                     <ComboboxList>
@@ -97,15 +107,16 @@ const Details = () => {
                                     </ComboboxList>
                                 </ComboboxContent>
                             </Combobox>
+                            {errors.taxPaid && <p className="text-xs text-red-500 mt-1">{errors.taxPaid}</p>}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="category" className='text-xs -mb-1 text-gray-500'>CATEGORY / TYPE<span className="text-destructive">*</span></FieldLabel>
                             <Combobox
                                 items={categories}
                                 value={data.category}
-                                onValueChange={(val) => updateField("category", val ?? "")}
+                                onValueChange={(val) => { updateField("category", val ?? ""); setErrors(prev => ({ ...prev, category: "" })) }}
                             >
-                                <ComboboxInput placeholder="Select a category" />
+                                <ComboboxInput placeholder="Select a category" className={errors.category ? "border-red-500" : ""} />
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
                                     <ComboboxList>
@@ -117,6 +128,7 @@ const Details = () => {
                                     </ComboboxList>
                                 </ComboboxContent>
                             </Combobox>
+                            {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
                         </Field>
                     </div>
                 </div>
@@ -134,8 +146,10 @@ const Details = () => {
                                 type="text"
                                 placeholder="Neighboring Plot Name"
                                 value={data.northBoundary}
-                                onChange={(e) => updateField("northBoundary", e.target.value)}
+                                onChange={(e) => { updateField("northBoundary", e.target.value); setErrors(prev => ({ ...prev, northBoundary: "" })) }}
+                                className={errors.northBoundary ? "border-red-500" : ""}
                             />
+                            {errors.northBoundary && <p className="text-xs text-red-500 mt-1">{errors.northBoundary}</p>}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="south-boundary" className='text-xs -mb-1 text-gray-500'>SOUTH BOUNDARY<span className="text-destructive">*</span></FieldLabel>
@@ -144,8 +158,10 @@ const Details = () => {
                                 type="text"
                                 placeholder="Neighboring Plot Name"
                                 value={data.southBoundary}
-                                onChange={(e) => updateField("southBoundary", e.target.value)}
+                                onChange={(e) => { updateField("southBoundary", e.target.value); setErrors(prev => ({ ...prev, southBoundary: "" })) }}
+                                className={errors.southBoundary ? "border-red-500" : ""}
                             />
+                            {errors.southBoundary && <p className="text-xs text-red-500 mt-1">{errors.southBoundary}</p>}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="east-boundary" className='text-xs -mb-1 text-gray-500'>EAST BOUNDARY<span className="text-destructive">*</span></FieldLabel>
@@ -154,8 +170,10 @@ const Details = () => {
                                 type="text"
                                 placeholder="Neighboring Plot Name"
                                 value={data.eastBoundary}
-                                onChange={(e) => updateField("eastBoundary", e.target.value)}
+                                onChange={(e) => { updateField("eastBoundary", e.target.value); setErrors(prev => ({ ...prev, eastBoundary: "" })) }}
+                                className={errors.eastBoundary ? "border-red-500" : ""}
                             />
+                            {errors.eastBoundary && <p className="text-xs text-red-500 mt-1">{errors.eastBoundary}</p>}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="west-boundary" className='text-xs -mb-1 text-gray-500'>WEST BOUNDARY<span className="text-destructive">*</span></FieldLabel>
@@ -164,8 +182,10 @@ const Details = () => {
                                 type="text"
                                 placeholder="Neighboring Plot Name"
                                 value={data.westBoundary}
-                                onChange={(e) => updateField("westBoundary", e.target.value)}
+                                onChange={(e) => { updateField("westBoundary", e.target.value); setErrors(prev => ({ ...prev, westBoundary: "" })) }}
+                                className={errors.westBoundary ? "border-red-500" : ""}
                             />
+                            {errors.westBoundary && <p className="text-xs text-red-500 mt-1">{errors.westBoundary}</p>}
                         </Field>
                     </div>
                 </div>

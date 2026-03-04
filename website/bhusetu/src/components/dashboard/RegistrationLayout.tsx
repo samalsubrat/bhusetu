@@ -26,7 +26,10 @@ export default function RegistrationLayout({ children }: RegistrationLayoutProps
     const currentStep = getCurrentStep()
 
     const handleStepClick = (step: typeof steps[0]) => {
-        router.push(step.route)
+        // Only allow navigating to completed or current steps, not future ones
+        if (step.number <= currentStep) {
+            router.push(step.route)
+        }
     }
 
     return (
@@ -53,11 +56,11 @@ export default function RegistrationLayout({ children }: RegistrationLayoutProps
                             return (
                                 <div key={step.number} className="relative z-10 flex flex-col items-center">
                                     <div
-                                        className={`size-10 rounded-full flex items-center justify-center font-bold ring-4 ring-white cursor-pointer transition-colors ${isActive
-                                                ? "bg-primary text-white"
-                                                : isCompleted
-                                                    ? "bg-green-500 text-white font-bold"
-                                                    : "bg-slate-100 text-slate-400"
+                                        className={`size-10 rounded-full flex items-center justify-center font-bold ring-4 ring-white transition-colors ${isActive
+                                            ? "bg-primary text-white cursor-pointer"
+                                            : isCompleted
+                                                ? "bg-green-500 text-white font-bold cursor-pointer"
+                                                : "bg-slate-100 text-slate-400 cursor-not-allowed"
                                             }`}
                                         onClick={() => handleStepClick(step)}
                                     >
@@ -65,10 +68,10 @@ export default function RegistrationLayout({ children }: RegistrationLayoutProps
                                     </div>
                                     <span
                                         className={`mt-2 text-xs font-bold uppercase tracking-wider ${isActive
-                                                ? "text-primary"
-                                                : isCompleted
-                                                    ? "text-green-500"
-                                                    : "text-slate-400"
+                                            ? "text-primary"
+                                            : isCompleted
+                                                ? "text-green-500"
+                                                : "text-slate-400"
                                             }`}
                                     >
                                         {step.label}

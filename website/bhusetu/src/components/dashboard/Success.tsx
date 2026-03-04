@@ -1,10 +1,32 @@
+"use client"
+
 import Link from "next/link"
 import { CheckCircle2, FileText, ArrowRight, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Confetti } from "@/components/ui/confetti"
+import { useState, useEffect } from "react"
+import { useRegistration } from "@/context/RegistrationContext"
+import { calculateProcessingFee, calculateStampDuty } from "@/lib/registration-fees"
 
 const Success = () => {
+    const { data: regData } = useRegistration()
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    // Default values if not mounted
+    const landAreaNum = mounted ? (parseFloat(regData.landArea) || 0) : 0
+    const taxPaid = mounted ? (regData.taxPaid === "Yes") : false
+    const processingFee = mounted ? calculateProcessingFee(landAreaNum, regData.category, taxPaid) : 0
+    const stampDuty = mounted ? calculateStampDuty(regData.district) : 0
+    const totalAmount = processingFee + stampDuty
+
+    // Prevents SSR hydration mismatch since data is read from localStorage
+    if (!mounted) return null;
+
     return (
         <>
             <Confetti className="fixed inset-0 w-full h-full pointer-events-none z-50" />
@@ -38,7 +60,7 @@ const Success = () => {
                     <div className="w-full bg-slate-50 rounded-lg border border-slate-100 divide-y divide-slate-100 text-sm mt-2">
                         <div className="flex items-center justify-between px-4 py-3">
                             <span className="text-slate-500">Amount Paid</span>
-                            <span className="font-bold text-slate-900">₹ 13,950</span>
+                            <span className="font-bold text-slate-900">₹ {totalAmount.toLocaleString("en-IN")}</span>
                         </div>
                         <div className="flex items-center justify-between px-4 py-3">
                             <span className="text-slate-500">Status</span>

@@ -5,21 +5,24 @@ import { useRouter } from 'next/navigation'
 import { Button } from "../ui/button"
 import { Upload, FileText, Trash2, CreditCard, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck, Loader2, ExternalLink, Lock } from "lucide-react"
 import RegistrationFeeSidebar from "@/components/dashboard/RegistrationFeeSidebar"
+import { useRegistration, validateDocumentsStep, type UploadedDocument, type ValidationErrors } from "@/context/RegistrationContext"
 
-interface UploadedFile {
-    id: string
-    cid: string
-    name: string
-    size: number
-    mimeType: string
-}
+type DocCategory = UploadedDocument["category"]
 
 const Documents = () => {
     const router = useRouter()
-    const fileInputRef = useRef<HTMLInputElement>(null)
     const dropzoneInputRef = useRef<HTMLInputElement>(null)
+    const { data: regData, addDocument, removeDocument } = useRegistration()
+
+    const [uploading, setUploading] = useState(false)
+    const [uploadingCategory, setUploadingCategory] = useState<DocCategory | null>(null)
+    const [openingFile, setOpeningFile] = useState<string | null>(null)
+    const [errors, setErrors] = useState<ValidationErrors>({})
 
     const handleNextStep = () => {
+        const validationErrors = validateDocumentsStep(regData)
+        setErrors(validationErrors)
+        if (Object.keys(validationErrors).length > 0) return
         router.push('/dashboard/registration/review')
     }
 
@@ -27,13 +30,10 @@ const Documents = () => {
         router.push('/dashboard/registration/location')
     }
 
-    const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
-    const [uploading, setUploading] = useState(false)
-    const [openingFile, setOpeningFile] = useState<string | null>(null)
-
-    const uploadFile = async (file: File) => {
+    const uploadFile = async (file: File, category: DocCategory) => {
         try {
             setUploading(true)
+            setUploadingCategory(category)
             const data = new FormData()
             data.set("file", file)
             const res = await fetch("/api/files", {
@@ -42,56 +42,66 @@ const Documents = () => {
             })
             if (!res.ok) throw new Error("Upload failed")
             const result = await res.json()
-            setUploadedFiles((prev) => [
-                ...prev,
-                {
-                    id: result.id,
-                    cid: result.cid,
-                    name: result.name,
-                    size: result.size,
-                    mimeType: result.mimeType,
-                },
-            ])
+            addDocument({
+                id: result.id,
+                cid: result.cid,
+                name: result.name,
+                size: result.size,
+                mimeType: result.mimeType,
+                category,
+            })
+            // Clear the error for this category once uploaded
+            setErrors(prev => {
+                const next = { ...prev }
+                delete next[category]
+                return next
+            })
         } catch (e) {
             console.error(e)
             alert("Failed to upload file. Please try again.")
         } finally {
             setUploading(false)
+            setUploadingCategory(null)
         }
     }
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCategoryFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, category: DocCategory) => {
         const file = e.target?.files?.[0]
-        if (file) await uploadFile(file)
-        // Reset input so the same file can be selected again
+        if (file) await uploadFile(file, category)
+        e.target.value = ""
+    }
+
+    const handleDropzoneFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target?.files?.[0]
+        if (file) await uploadFile(file, "other")
         e.target.value = ""
     }
 
     const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault()
         const file = e.dataTransfer.files?.[0]
-        if (file) await uploadFile(file)
+        if (file) await uploadFile(file, "other")
     }
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault()
     }
 
-    const handleRemoveFile = async (fileId: string, cid: string) => {
+    const handleRemoveFile = async (doc: UploadedDocument) => {
         try {
             await fetch("/api/files", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ids: [fileId] }),
+                body: JSON.stringify({ ids: [doc.id] }),
             })
-            setUploadedFiles((prev) => prev.filter((f) => f.cid !== cid))
+            removeDocument(doc.cid)
         } catch (e) {
             console.error(e)
             alert("Failed to delete file. Please try again.")
         }
     }
 
-    const handleOpenFile = async (file: UploadedFile) => {
+    const handleOpenFile = async (file: UploadedDocument) => {
         try {
             setOpeningFile(file.cid)
             const res = await fetch("/api/files/view", {
@@ -128,6 +138,35 @@ const Documents = () => {
         return <FileText className="size-4 text-primary shrink-0" />
     }
 
+    const getCategoryDocs = (category: DocCategory) => regData.documents.filter(d => d.category === category)
+
+    const categoryCards: { category: DocCategory; label: string; description: string; icon: React.ReactNode; bgColor: string; iconColor: string }[] = [
+        {
+            category: "sale_deed",
+            label: "Sale Deed",
+            description: "Mandatory legal document for land registration.",
+            icon: <FileText className="size-6" />,
+            bgColor: "bg-blue-100",
+            iconColor: "text-blue-600",
+        },
+        {
+            category: "tax_receipt",
+            label: "Tax Receipts",
+            description: "Upload latest property tax clearance receipts.",
+            icon: <CreditCard className="size-6" />,
+            bgColor: "bg-slate-100",
+            iconColor: "text-slate-500",
+        },
+        {
+            category: "identity_proof",
+            label: "Aadhar Card",
+            description: "Government issued ID for Identity Proof.",
+            icon: <CreditCard className="size-6" />,
+            bgColor: "bg-blue-100",
+            iconColor: "text-blue-600",
+        },
+    ]
+
     return (
         <>
             {/* Document Upload */}
@@ -138,85 +177,84 @@ const Documents = () => {
 
                     {/* Document Type Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Sale Deed */}
-                        <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
-                            <div className="flex items-start justify-between">
-                                <div className="size-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                                    <FileText className="size-6" />
-                                </div>
-                                {uploadedFiles.some(f => f.name.toLowerCase().includes("sale") || f.name.toLowerCase().includes("deed")) ? (
-                                    <div className="size-6 rounded-full bg-green-500 flex items-center justify-center">
-                                        <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        {categoryCards.map((card) => {
+                            const docs = getCategoryDocs(card.category)
+                            const hasDoc = docs.length > 0
+                            const hasError = !!errors[card.category]
+                            return (
+                                <div
+                                    key={card.category}
+                                    className={`relative p-4 rounded-xl border-2 bg-white flex flex-col gap-3 transition-colors ${hasError ? "border-red-400 bg-red-50/30" : "border-slate-200"}`}
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className={`size-12 rounded-xl ${card.bgColor} flex items-center justify-center ${card.iconColor}`}>
+                                            {card.icon}
+                                        </div>
+                                        {hasDoc && (
+                                            <div className="size-6 rounded-full bg-green-500 flex items-center justify-center">
+                                                <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                            </div>
+                                        )}
                                     </div>
-                                ) : null}
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-slate-900">Sale Deed</h3>
-                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">Mandatory legal document for land registration.</p>
-                            </div>
-                            <div className="mt-auto pt-2">
-                                <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                                    <Upload className="size-4 text-slate-400" />
-                                    <span className="text-sm text-slate-500 font-medium">Upload File</span>
-                                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} />
-                                </label>
-                            </div>
-                        </div>
+                                    <div>
+                                        <h3 className="font-bold text-slate-900">{card.label}</h3>
+                                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">{card.description}</p>
+                                    </div>
 
-                        {/* Tax Receipts */}
-                        <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
-                            <div className="flex items-start justify-between">
-                                <div className="size-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
-                                    <CreditCard className="size-6" />
-                                </div>
-                                {uploadedFiles.some(f => f.name.toLowerCase().includes("tax") || f.name.toLowerCase().includes("receipt")) ? (
-                                    <div className="size-6 rounded-full bg-green-500 flex items-center justify-center">
-                                        <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                    </div>
-                                ) : null}
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-slate-900">Tax Receipts</h3>
-                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">Upload latest property tax clearance receipts.</p>
-                            </div>
-                            <div className="mt-auto pt-2">
-                                <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                                    <Upload className="size-4 text-slate-400" />
-                                    <span className="text-sm text-slate-500 font-medium">Upload File</span>
-                                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} />
-                                </label>
-                            </div>
-                        </div>
+                                    {/* Show uploaded file for this category */}
+                                    {docs.map((doc) => (
+                                        <div key={doc.cid} className="flex items-center justify-between p-2 bg-green-50 rounded-lg border border-green-200 text-xs">
+                                            <button
+                                                onClick={() => handleOpenFile(doc)}
+                                                className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer"
+                                                title="Click to view"
+                                            >
+                                                {getFileIcon(doc.mimeType)}
+                                                <span className="truncate font-medium text-slate-700">{doc.name}</span>
+                                                {openingFile === doc.cid ? (
+                                                    <Loader2 className="size-3 animate-spin text-primary shrink-0" />
+                                                ) : (
+                                                    <ExternalLink className="size-3 text-slate-400 shrink-0" />
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => handleRemoveFile(doc)}
+                                                className="text-slate-400 hover:text-red-500 transition-colors ml-2 cursor-pointer shrink-0"
+                                                title="Remove file"
+                                            >
+                                                <Trash2 className="size-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
 
-                        {/* Identity Proof */}
-                        <div className="relative p-4 rounded-xl border-2 border-slate-200 bg-white flex flex-col gap-3">
-                            <div className="flex items-start justify-between">
-                                <div className="size-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
-                                    <CreditCard className="size-6" />
-                                </div>
-                                {uploadedFiles.some(f => f.name.toLowerCase().includes("aadhar") || f.name.toLowerCase().includes("aadhaar") || f.name.toLowerCase().includes("id")) ? (
-                                    <div className="size-6 rounded-full bg-green-500 flex items-center justify-center">
-                                        <svg className="size-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    <div className="mt-auto pt-2">
+                                        <label className={`flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${hasError ? "border-red-300 hover:border-red-500 hover:bg-red-50" : "border-slate-200 hover:border-primary hover:bg-primary/5"}`}>
+                                            {uploadingCategory === card.category ? (
+                                                <Loader2 className="size-4 animate-spin text-primary" />
+                                            ) : (
+                                                <Upload className="size-4 text-slate-400" />
+                                            )}
+                                            <span className="text-sm text-slate-500 font-medium">
+                                                {uploadingCategory === card.category ? "Uploading..." : (hasDoc ? "Replace File" : "Upload File")}
+                                            </span>
+                                            <input
+                                                type="file"
+                                                className="hidden"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                onChange={(e) => handleCategoryFileSelect(e, card.category)}
+                                                disabled={uploading}
+                                            />
+                                        </label>
                                     </div>
-                                ) : null}
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-slate-900">Aadhar Card</h3>
-                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">Government issued ID for Identity Proof.</p>
-                            </div>
-                            <div className="mt-auto pt-2">
-                                <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
-                                    <Upload className="size-4 text-slate-400" />
-                                    <span className="text-sm text-slate-500 font-medium">Upload File</span>
-                                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileSelect} />
-                                </label>
-                            </div>
-                        </div>
+                                    {hasError && <p className="text-xs text-red-500 font-medium">{errors[card.category]}</p>}
+                                </div>
+                            )
+                        })}
                     </div>
 
                     {/* Drag & Drop + Uploaded Files */}
                     <section className="p-6 bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden">
-                        <h2 className='text-black text-xs md:text-sm font-semibold pb-4 w-full'>UPLOAD DOCUMENTS</h2>
+                        <h2 className='text-black text-xs md:text-sm font-semibold pb-4 w-full'>ADDITIONAL DOCUMENTS (OPTIONAL)</h2>
                         <div className='h-px bg-slate-300 -mx-6' />
                         <div className="pt-6">
                             <div
@@ -226,17 +264,17 @@ const Documents = () => {
                                 onClick={() => dropzoneInputRef.current?.click()}
                             >
                                 <div className="size-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/10 transition-colors mb-4">
-                                    {uploading ? <Loader2 className="size-8 animate-spin" /> : <Upload className="size-8" />}
+                                    {uploading && uploadingCategory === "other" ? <Loader2 className="size-8 animate-spin" /> : <Upload className="size-8" />}
                                 </div>
                                 <p className="text-lg font-bold text-slate-900">
-                                    {uploading ? "Encrypting & uploading..." : "Drag and drop documents"}
+                                    {uploading && uploadingCategory === "other" ? "Encrypting & uploading..." : "Drag and drop documents"}
                                 </p>
                                 <p className="text-sm text-slate-500 mt-1">PDF, JPG or PNG (Max 10MB each)</p>
                                 <div className="flex items-center gap-1.5 mt-2 text-xs text-primary font-medium">
                                     <Lock className="size-3" />
                                     Files are encrypted before upload to IPFS
                                 </div>
-                                {!uploading && (
+                                {!(uploading && uploadingCategory === "other") && (
                                     <Button variant="outline" className="mt-6 rounded-lg font-bold" onClick={(e) => { e.stopPropagation(); dropzoneInputRef.current?.click() }}>
                                         Browse Files
                                     </Button>
@@ -246,18 +284,18 @@ const Documents = () => {
                                     type="file"
                                     className="hidden"
                                     accept=".pdf,.jpg,.jpeg,.png"
-                                    onChange={handleFileSelect}
+                                    onChange={handleDropzoneFileSelect}
                                 />
                             </div>
 
-                            {/* Uploaded Files List */}
-                            {uploadedFiles.length > 0 && (
+                            {/* Uploaded Other Files List */}
+                            {getCategoryDocs("other").length > 0 && (
                                 <div className="mt-4 space-y-2">
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                        Uploaded ({uploadedFiles.length} file{uploadedFiles.length !== 1 ? "s" : ""})
+                                        Additional ({getCategoryDocs("other").length} file{getCategoryDocs("other").length !== 1 ? "s" : ""})
                                     </p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {uploadedFiles.map((f) => (
+                                        {getCategoryDocs("other").map((f) => (
                                             <div
                                                 key={f.cid}
                                                 className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-primary/30 transition-colors group/file"
@@ -281,7 +319,7 @@ const Documents = () => {
                                                     )}
                                                 </button>
                                                 <button
-                                                    onClick={() => handleRemoveFile(f.id, f.cid)}
+                                                    onClick={() => handleRemoveFile(f)}
                                                     className="text-slate-300 hover:text-red-500 transition-colors ml-2 cursor-pointer shrink-0"
                                                     title="Remove file"
                                                 >
@@ -331,6 +369,30 @@ const Documents = () => {
                                     All documents are encrypted before being uploaded to IPFS via Pinata&apos;s private network. Only authorized parties can access them via time-limited signed URLs.
                                 </p>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Mandatory Documents Checklist */}
+                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                        <h3 className="text-sm font-bold text-slate-900 mb-3">Mandatory Documents</h3>
+                        <div className="space-y-2">
+                            {categoryCards.map((card) => {
+                                const hasDoc = getCategoryDocs(card.category).length > 0
+                                return (
+                                    <div key={card.category} className="flex items-center gap-3">
+                                        <div className={`size-5 rounded-full flex items-center justify-center ${hasDoc ? "bg-green-500" : "bg-slate-200"}`}>
+                                            {hasDoc ? (
+                                                <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                            ) : (
+                                                <div className="size-2 rounded-full bg-slate-400" />
+                                            )}
+                                        </div>
+                                        <span className={`text-sm ${hasDoc ? "text-green-700 font-medium" : "text-slate-500"}`}>
+                                            {card.label}
+                                        </span>
+                                    </div>
+                                )
+                            })}
                         </div>
                     </div>
 

@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "../ui/button"
-import { Upload, FileText, Trash2, CreditCard, BadgeIndianRupee, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck, Loader2 } from "lucide-react"
-import { useRegistration } from "@/context/RegistrationContext"
+import { FileText, CreditCard, ChevronRight, ArrowRight, ChevronLeft, ShieldCheck, Loader2, ExternalLink, MapPin, User, Landmark, FileCheck } from "lucide-react"
+import { useRegistration, type UploadedDocument } from "@/context/RegistrationContext"
 import { calculateProcessingFee, calculateStampDuty } from "@/lib/registration-fees"
 import RegistrationFeeSidebar from "@/components/dashboard/RegistrationFeeSidebar"
 
@@ -32,6 +32,7 @@ function loadRazorpayScript(): Promise<boolean> {
 const Review = () => {
     const router = useRouter()
     const [isPaying, setIsPaying] = useState(false)
+    const [openingFile, setOpeningFile] = useState<string | null>(null)
     const { data: regData } = useRegistration()
 
     const landAreaNum = parseFloat(regData.landArea) || 0
@@ -41,7 +42,53 @@ const Review = () => {
     const totalAmount = processingFee + stampDuty
 
     const handlePreviousStep = () => {
-        router.push('/dashboard/registration/location')
+        router.push('/dashboard/registration/documents')
+    }
+
+    const handleOpenFile = async (file: UploadedDocument) => {
+        try {
+            setOpeningFile(file.cid)
+            const res = await fetch("/api/files/view", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: file.id,
+                    cid: file.cid,
+                    originalName: file.name,
+                    mimeType: file.mimeType,
+                }),
+            })
+            if (!res.ok) throw new Error("Failed to decrypt file")
+            const blob = await res.blob()
+            const blobUrl = URL.createObjectURL(blob)
+            window.open(blobUrl, "_blank", "noopener,noreferrer")
+        } catch (e) {
+            console.error(e)
+            alert("Failed to open file. Please try again.")
+        } finally {
+            setOpeningFile(null)
+        }
+    }
+
+    const getFileIcon = (mimeType: string) => {
+        if (mimeType.includes("pdf")) return <FileText className="size-4 text-red-500 shrink-0" />
+        if (mimeType.includes("image")) return <CreditCard className="size-4 text-blue-500 shrink-0" />
+        return <FileText className="size-4 text-primary shrink-0" />
+    }
+
+    const formatFileSize = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    }
+
+    const getCategoryLabel = (category: string) => {
+        switch (category) {
+            case "sale_deed": return "Sale Deed"
+            case "tax_receipt": return "Tax Receipt"
+            case "identity_proof": return "Identity Proof"
+            default: return "Other Document"
+        }
     }
 
     const handlePayment = async () => {
@@ -80,7 +127,7 @@ const Review = () => {
                         alert('Payment verification failed. Please contact support.')
                     }
                 },
-                prefill: { name: '', email: '', contact: '' },
+                prefill: { name: regData.ownerName, email: '', contact: '' },
                 theme: { color: '#2563eb' },
                 modal: { ondismiss: () => setIsPaying(false) },
             }
@@ -97,44 +144,116 @@ const Review = () => {
 
     return (
         <>
-            {/* Document Upload */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* Left Panel  */}
-                <div className="lg:col-span-2 space-y-8">
-                    <section className="p-6 bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden">
-                        <h2 className='text-black text-xs md:text-sm font-semibold pb-4 w-full'>OWNER & PROPERTY DETAILS</h2>
-                        <div className='h-px bg-slate-300 -mx-6' />
-                        <div className="pt-6">
-                            <div className="border-2 border-dashed border-slate-200 rounded-lg p-10 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-primary/5 hover:border-primary transition-colors cursor-pointer group">
-                                <div className="size-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/10 transition-colors mb-4">
-                                    <Upload className="size-8" />
+                {/* Left Panel – Review Content */}
+                <div className="lg:col-span-2 space-y-6">
+
+                    {/* Owner & Property Details */}
+                    <section className="bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden">
+                        <div className="p-6 pb-4 flex items-center gap-2">
+                            <User className="size-4 text-primary" />
+                            <h2 className='text-black text-xs md:text-sm font-semibold'>OWNER & PROPERTY DETAILS</h2>
+                        </div>
+                        <div className='h-px bg-slate-200 mx-0' />
+                        <div className="p-6 grid grid-cols-2 gap-x-8 gap-y-4">
+                            <ReviewField label="Legal Owner Name" value={regData.ownerName} />
+                            <ReviewField label="Land Area" value={regData.landArea ? `${regData.landArea} sqft` : ""} />
+                            <ReviewField label="Latest Tax Paid" value={regData.taxPaid} />
+                            <ReviewField label="Category / Type" value={regData.category} />
+                        </div>
+                    </section>
+
+                    {/* Boundary Information */}
+                    <section className="bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden">
+                        <div className="p-6 pb-4 flex items-center gap-2">
+                            <Landmark className="size-4 text-primary" />
+                            <h2 className='text-black text-xs md:text-sm font-semibold'>BOUNDARY INFORMATION</h2>
+                        </div>
+                        <div className='h-px bg-slate-200 mx-0' />
+                        <div className="p-6 grid grid-cols-2 gap-x-8 gap-y-4">
+                            <ReviewField label="North Boundary" value={regData.northBoundary} />
+                            <ReviewField label="South Boundary" value={regData.southBoundary} />
+                            <ReviewField label="East Boundary" value={regData.eastBoundary} />
+                            <ReviewField label="West Boundary" value={regData.westBoundary} />
+                        </div>
+                    </section>
+
+                    {/* Location Information */}
+                    <section className="bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden">
+                        <div className="p-6 pb-4 flex items-center gap-2">
+                            <MapPin className="size-4 text-primary" />
+                            <h2 className='text-black text-xs md:text-sm font-semibold'>LOCATION INFORMATION</h2>
+                        </div>
+                        <div className='h-px bg-slate-200 mx-0' />
+                        <div className="p-6 grid grid-cols-2 gap-x-8 gap-y-4">
+                            <ReviewField label="PIN Code" value={regData.pincode} />
+                            <ReviewField label="State" value={regData.state} />
+                            <ReviewField label="District" value={regData.district} />
+                            <ReviewField label="Post Office" value={regData.postOffice} />
+                            <ReviewField label="Tehsil / Village" value={regData.tehsil} />
+                            <ReviewField label="Plot Number" value={regData.plotNumber} />
+                        </div>
+                    </section>
+
+                    {/* Uploaded Documents */}
+                    <section className="bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden">
+                        <div className="p-6 pb-4 flex items-center gap-2">
+                            <FileCheck className="size-4 text-primary" />
+                            <h2 className='text-black text-xs md:text-sm font-semibold'>UPLOADED DOCUMENTS ({regData.documents.length})</h2>
+                        </div>
+                        <div className='h-px bg-slate-200 mx-0' />
+                        <div className="p-6">
+                            {regData.documents.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {regData.documents.map((doc) => (
+                                        <button
+                                            key={doc.cid}
+                                            onClick={() => handleOpenFile(doc)}
+                                            className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-primary/30 transition-colors group/file text-left cursor-pointer"
+                                        >
+                                            {getFileIcon(doc.mimeType)}
+                                            <div className="min-w-0 flex-1">
+                                                <span className="text-sm font-medium truncate block group-hover/file:text-primary transition-colors">
+                                                    {doc.name}
+                                                </span>
+                                                <span className="text-xs text-slate-400">
+                                                    {getCategoryLabel(doc.category)} · {formatFileSize(doc.size)}
+                                                </span>
+                                            </div>
+                                            {openingFile === doc.cid ? (
+                                                <Loader2 className="size-4 animate-spin text-primary shrink-0" />
+                                            ) : (
+                                                <ExternalLink className="size-4 text-slate-300 group-hover/file:text-primary shrink-0 transition-colors" />
+                                            )}
+                                        </button>
+                                    ))}
                                 </div>
-                                <p className="text-lg font-bold text-slate-900">Drag and drop documents</p>
-                                <p className="text-sm text-slate-500 mt-1">PDF, JPG or PNG (Max 10MB each)</p>
-                                <Button variant="outline" className="mt-6 rounded-lg font-bold">
-                                    Browse Files
-                                </Button>
+                            ) : (
+                                <p className="text-sm text-slate-400 italic">No documents uploaded.</p>
+                            )}
+                        </div>
+                    </section>
+
+                    {/* Fee Summary */}
+                    <section className="bg-white rounded-xl shadow-sm border border-gray-300 overflow-hidden">
+                        <div className="p-6 pb-4">
+                            <h2 className='text-black text-xs md:text-sm font-semibold'>FEE SUMMARY</h2>
+                        </div>
+                        <div className='h-px bg-slate-200 mx-0' />
+                        <div className="p-6 space-y-3">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500">Processing Fee</span>
+                                <span className="font-medium text-slate-900">₹{processingFee.toLocaleString("en-IN")}</span>
                             </div>
-                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <FileText className="size-5 text-primary" />
-                                        <span className="text-sm font-medium">Sale_Deed_v1.pdf</span>
-                                    </div>
-                                    <button className="text-slate-400 hover:text-red-500 transition-colors">
-                                        <Trash2 className="size-4" />
-                                    </button>
-                                </div>
-                                <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <CreditCard className="size-5 text-primary" />
-                                        <span className="text-sm font-medium">ID_Proof_Aadhar.jpg</span>
-                                    </div>
-                                    <button className="text-slate-400 hover:text-red-500 transition-colors">
-                                        <Trash2 className="size-4" />
-                                    </button>
-                                </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500">Stamp Duty ({regData.district || "N/A"})</span>
+                                <span className="font-medium text-slate-900">₹{stampDuty.toLocaleString("en-IN")}</span>
+                            </div>
+                            <div className="h-px bg-slate-200 my-2" />
+                            <div className="flex justify-between text-base font-bold">
+                                <span className="text-slate-900">Total Amount</span>
+                                <span className="text-primary">₹{totalAmount.toLocaleString("en-IN")}</span>
                             </div>
                         </div>
                     </section>
@@ -163,18 +282,16 @@ const Review = () => {
                         </div>
                     </div>
 
-                    {/* location verification  */}
-                    <div className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
-                        <div className="flex items-start gap-4">
-                            <div className="p-1.5 bg-blue-100 rounded-lg">
-                                <ChevronRight className="size-5 text-blue-600" />
-                            </div>
-                            <div className="flex flex-col gap-2">
-                                <h3 className="text-sm font-bold text-slate-900">Location Verification</h3>
-                                <p className="text-xs text-slate-600 leading-relaxed">
-                                    Provide accurate location details. This information will be verified against official records and satellite mapping.
-                                </p>
-                            </div>
+                    {/* Review Checklist */}
+                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                        <h3 className="text-sm font-bold text-slate-900 mb-3">Review Checklist</h3>
+                        <div className="space-y-2">
+                            <ChecklistItem label="Owner details filled" checked={!!regData.ownerName && !!regData.landArea} />
+                            <ChecklistItem label="Boundary details filled" checked={!!regData.northBoundary && !!regData.southBoundary && !!regData.eastBoundary && !!regData.westBoundary} />
+                            <ChecklistItem label="Location verified" checked={!!regData.pincode && !!regData.state && !!regData.district} />
+                            <ChecklistItem label="Sale Deed uploaded" checked={regData.documents.some(d => d.category === "sale_deed")} />
+                            <ChecklistItem label="Tax Receipt uploaded" checked={regData.documents.some(d => d.category === "tax_receipt")} />
+                            <ChecklistItem label="Identity Proof uploaded" checked={regData.documents.some(d => d.category === "identity_proof")} />
                         </div>
                     </div>
 
@@ -196,9 +313,6 @@ const Review = () => {
 
                     {/* Navigation Buttons */}
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <Button variant="ghost" className="hover:cursor-pointer w-full sm:w-auto p-4 font-bold text-slate-600">
-                            Save Draft
-                        </Button>
                         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                             <Button
                                 variant="outline"
@@ -222,6 +336,37 @@ const Review = () => {
 
             </div>
         </>
+    )
+}
+
+
+// ─── Helper Components ───────────────────────────────────────────────
+
+function ReviewField({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="space-y-1">
+            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">{label}</p>
+            <p className={`text-sm font-medium ${value ? "text-slate-900" : "text-slate-300 italic"}`}>
+                {value || "Not provided"}
+            </p>
+        </div>
+    )
+}
+
+function ChecklistItem({ label, checked }: { label: string; checked: boolean }) {
+    return (
+        <div className="flex items-center gap-3">
+            <div className={`size-5 rounded-full flex items-center justify-center ${checked ? "bg-green-500" : "bg-slate-200"}`}>
+                {checked ? (
+                    <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                ) : (
+                    <div className="size-2 rounded-full bg-slate-400" />
+                )}
+            </div>
+            <span className={`text-sm ${checked ? "text-green-700 font-medium" : "text-slate-500"}`}>
+                {label}
+            </span>
+        </div>
     )
 }
 

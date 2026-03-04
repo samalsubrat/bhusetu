@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { ChevronRight, ChevronLeft, Loader2, MapPin, ShieldCheck, ArrowRight } from "lucide-react"
 import { usePincode } from "@/hooks/use-location-data"
-import { useRegistration } from "@/context/RegistrationContext"
+import { useRegistration, validateLocationStep, type ValidationErrors } from "@/context/RegistrationContext"
 import RegistrationFeeSidebar from "@/components/dashboard/RegistrationFeeSidebar"
 
 import {
@@ -40,11 +40,14 @@ const Location = () => {
     const [gpsError, setGpsError] = useState<string | null>(null)
 
     const { data, loading, error } = usePincode(pincode)
+    const [errors, setErrors] = useState<ValidationErrors>({})
 
     const handlePincodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.replace(/\D/g, "").slice(0, 6)
         setPincode(value)
         updateField("pincode", value)
+        // Clear gpsLocation to allow the map to automatically center on the new pin-code location
+        setGpsLocation(null)
     }
 
     const handleGpsLocate = () => {
@@ -113,6 +116,9 @@ const Location = () => {
     }
 
     const handleNextStep = () => {
+        const validationErrors = validateLocationStep(regData)
+        setErrors(validationErrors)
+        if (Object.keys(validationErrors).length > 0) return
         router.push('/dashboard/registration/documents')
     }
 
@@ -189,6 +195,7 @@ const Location = () => {
                                 )}
                             </div>
                             {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+                            {errors.pincode && <p className="text-xs text-red-500 mt-1">{errors.pincode}</p>}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="state" className='text-xs -mb-1 text-gray-500'>
@@ -237,8 +244,10 @@ const Location = () => {
                                 key={pincode}
                                 items={data?.postOffices ?? []}
                                 disabled={!data}
+                                value={regData.postOffice}
+                                onValueChange={(val) => { updateField("postOffice", val ?? ""); setErrors(prev => ({ ...prev, postOffice: "" })) }}
                             >
-                                <ComboboxInput placeholder={data ? "Select a Post Office" : "Enter PIN code first"} />
+                                <ComboboxInput placeholder={data ? "Select a Post Office" : "Enter PIN code first"} className={errors.postOffice ? "border-red-500" : ""} />
                                 <ComboboxContent>
                                     <ComboboxEmpty>No post offices found.</ComboboxEmpty>
                                     <ComboboxList>
@@ -250,6 +259,7 @@ const Location = () => {
                                     </ComboboxList>
                                 </ComboboxContent>
                             </Combobox>
+                            {errors.postOffice && <p className="text-xs text-red-500 mt-1">{errors.postOffice}</p>}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="tehsil" className='text-xs -mb-1 text-gray-500'>
@@ -259,7 +269,11 @@ const Location = () => {
                                 id="tehsil"
                                 type="text"
                                 placeholder="Enter Tehsil / Village name"
+                                value={regData.tehsil}
+                                onChange={(e) => { updateField("tehsil", e.target.value); setErrors(prev => ({ ...prev, tehsil: "" })) }}
+                                className={errors.tehsil ? "border-red-500" : ""}
                             />
+                            {errors.tehsil && <p className="text-xs text-red-500 mt-1">{errors.tehsil}</p>}
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="plotnumber" className='text-xs -mb-1 text-gray-500'>
@@ -269,7 +283,11 @@ const Location = () => {
                                 id="plotnumber"
                                 type="text"
                                 placeholder="Enter Plot Number of your property"
+                                value={regData.plotNumber}
+                                onChange={(e) => { updateField("plotNumber", e.target.value); setErrors(prev => ({ ...prev, plotNumber: "" })) }}
+                                className={errors.plotNumber ? "border-red-500" : ""}
                             />
+                            {errors.plotNumber && <p className="text-xs text-red-500 mt-1">{errors.plotNumber}</p>}
                         </Field>
                     </div>
                 </div>

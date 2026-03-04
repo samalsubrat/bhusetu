@@ -38,15 +38,23 @@ export function usePincode(pincode: string) {
                     let lat: number | null = null
                     let lng: number | null = null
                     try {
-                        const geoQuery = `${first.Name}, ${first.District}, ${first.State}, India, ${pincode}`
-                        const geoRes = await fetch(
-                            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(geoQuery)}&format=json&limit=1&countrycodes=in`,
-                            { headers: { "User-Agent": "BhuSetu/1.0" } }
-                        )
-                        const geoData = await geoRes.json()
-                        if (geoData.length > 0) {
-                            lat = parseFloat(geoData[0].lat)
-                            lng = parseFloat(geoData[0].lon)
+                        const queries = [
+                            `${first.Name}, ${first.District}, ${first.State}, India, ${pincode}`,
+                            `${pincode}, India`, // Fallback 1: Just the pincode
+                            `${first.District}, ${first.State}, India` // Fallback 2: District and state
+                        ]
+
+                        for (const geoQuery of queries) {
+                            const geoRes = await fetch(
+                                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(geoQuery)}&format=json&limit=1&countrycodes=in`,
+                                { headers: { "User-Agent": "BhuSetu/1.0" } }
+                            )
+                            const geoData = await geoRes.json()
+                            if (geoData && geoData.length > 0) {
+                                lat = parseFloat(geoData[0].lat)
+                                lng = parseFloat(geoData[0].lon)
+                                break // Stop searching if we found a match
+                            }
                         }
                     } catch {
                         // Geocoding failed silently — map won't move

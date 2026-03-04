@@ -41,8 +41,8 @@ const navigationItems = [
   { name: "Search", href: "/dashboard/search", icon: Search, exact: true },
   { name: "Overview", href: "/dashboard", icon: BarChart3, exact: true },
   { name: "Registration", href: "/dashboard/registration", icon: BadgePlus },
-  { name: "Land Records", href: "/dashboard/medical-tests", icon: LandPlot },
-  { name: "Transfer Requests", href: "/dashboard/water-tests", icon: RefreshCcw },
+  { name: "Land Records", href: "/dashboard/land-records", icon: LandPlot },
+  { name: "Transfer Requests", href: "/dashboard/transfer-requests", icon: RefreshCcw },
 ]
 
 const ROLE_LABELS: Record<string, string> = {
