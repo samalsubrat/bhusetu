@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -23,6 +23,12 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
     HomeIcon,
     Clock,
     History,
@@ -39,113 +45,127 @@ import {
     ArrowUp,
     ArrowDown,
     Eye,
+    AlertCircle,
+    XCircle,
+    RefreshCw,
+    Minus,
+    Timer,
 } from "lucide-react"
 
 // ─── Types ───────────────────────────────────────────────────────────
-type LandStatus = "verified" | "in-progress" | "payment-pending" | "draft"
-type SortKey = "area" | "status" | "lastUpdated"
+type RegistrationStatus = "DRAFT" | "PENDING_PAYMENT" | "IN_PROGRESS" | "VERIFIED" | "REJECTED"
+type SortKey = "regNumber" | "area" | "status" | "lastUpdated"
 type SortDir = "asc" | "desc"
 
-interface LandParcel {
-    propertyId: string
-    location: string
-    area: string          // formatted, e.g. "2,450"
-    areaNum: number       // raw number for sorting
-    status: LandStatus
-    lastUpdated: string   // display string
-    lastUpdatedTs: number // timestamp for sorting
+interface RegistrationRecord {
+    id: string
+    regYear: number
+    regNumber: number
+    bhuSetuId: string | null
+    status: RegistrationStatus
+    paymentDeadline: string | null
+    ownerName: string
+    landArea: number
+    category: string
+    district: string
+    state: string
+    tehsil: string
+    plotNumber: string
+    processingFee: number
+    stampDuty: number
+    totalAmount: number
+    createdAt: string
+    updatedAt: string
 }
 
-// ─── Mock Data ───────────────────────────────────────────────────────
-const LAND_PARCELS: LandParcel[] = [
-    {
-        propertyId: "BHU-8829-XJ",
-        location: "Sector 45, Gurugram",
-        area: "2,450",
-        areaNum: 2450,
-        status: "verified",
-        lastUpdated: "Oct 12, 2023",
-        lastUpdatedTs: new Date("2023-10-12").getTime(),
-    },
-    {
-        propertyId: "BHU-1024-AK",
-        location: "Civil Lines, Jaipur",
-        area: "1,800",
-        areaNum: 1800,
-        status: "in-progress",
-        lastUpdated: "Jan 04, 2024",
-        lastUpdatedTs: new Date("2024-01-04").getTime(),
-    },
-    {
-        propertyId: "BHU-5541-MK",
-        location: "Whitefield, Bangalore",
-        area: "3,200",
-        areaNum: 3200,
-        status: "verified",
-        lastUpdated: "Aug 20, 2023",
-        lastUpdatedTs: new Date("2023-08-20").getTime(),
-    },
-    {
-        propertyId: "BHU-9921-PL",
-        location: "New Town, Kolkata",
-        area: "1,200",
-        areaNum: 1200,
-        status: "payment-pending",
-        lastUpdated: "Dec 05, 2023",
-        lastUpdatedTs: new Date("2023-12-05").getTime(),
-    },
-    {
-        propertyId: "BHU-3347-RS",
-        location: "Saheed Nagar, Bhubaneswar",
-        area: "980",
-        areaNum: 980,
-        status: "draft",
-        lastUpdated: "Feb 18, 2024",
-        lastUpdatedTs: new Date("2024-02-18").getTime(),
-    },
-]
-
 // ─── Status Config ───────────────────────────────────────────────────
-const STATUS_ORDER: Record<LandStatus, number> = {
-    draft: 0,
-    "payment-pending": 1,
-    "in-progress": 2,
-    verified: 3,
+const STATUS_ORDER: Record<RegistrationStatus, number> = {
+    DRAFT: 0,
+    PENDING_PAYMENT: 1,
+    IN_PROGRESS: 2,
+    VERIFIED: 3,
+    REJECTED: 4,
 }
 
 const STATUS_CONFIG: Record<
-    LandStatus,
+    RegistrationStatus,
     { label: string; icon: React.ReactNode; className: string }
 > = {
-    verified: {
+    VERIFIED: {
         label: "Verified",
         icon: <CheckCircle2 className="size-3.5" />,
         className: "bg-emerald-100 text-emerald-700 border-emerald-200",
     },
-    "in-progress": {
+    IN_PROGRESS: {
         label: "In Progress",
         icon: <Loader2 className="size-3.5" />,
         className: "bg-amber-100 text-amber-700 border-amber-200",
     },
-    "payment-pending": {
+    PENDING_PAYMENT: {
         label: "Payment Pending",
         icon: <CreditCard className="size-3.5" />,
         className: "bg-blue-100 text-blue-700 border-blue-200",
     },
-    draft: {
+    DRAFT: {
         label: "Draft",
         icon: <FileEdit className="size-3.5" />,
         className: "bg-slate-100 text-slate-600 border-slate-200",
     },
+    REJECTED: {
+        label: "Rejected",
+        icon: <XCircle className="size-3.5" />,
+        className: "bg-red-100 text-red-700 border-red-200",
+    },
 }
 
-const FILTER_OPTIONS: { value: LandStatus | "all"; label: string }[] = [
+const FILTER_OPTIONS: { value: RegistrationStatus | "all"; label: string }[] = [
     { value: "all", label: "All Statuses" },
-    { value: "verified", label: "Verified" },
-    { value: "in-progress", label: "In Progress" },
-    { value: "payment-pending", label: "Payment Pending" },
-    { value: "draft", label: "Draft" },
+    { value: "VERIFIED", label: "Verified" },
+    { value: "IN_PROGRESS", label: "In Progress" },
+    { value: "PENDING_PAYMENT", label: "Payment Pending" },
+    { value: "DRAFT", label: "Draft" },
+    { value: "REJECTED", label: "Rejected" },
 ]
+
+// ─── Helpers ─────────────────────────────────────────────────────────
+function formatRegNumber(year: number, num: number): string {
+    return `REG-${year}-${String(num).padStart(5, "0")}`
+}
+
+function formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString("en-IN", {
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+    })
+}
+
+function formatArea(area: number): string {
+    return area.toLocaleString("en-IN")
+}
+
+function getPaymentTimeRemaining(deadline: string | null): { text: string; urgent: boolean; expired: boolean } | null {
+    if (!deadline) return null
+    const now = new Date()
+    const dl = new Date(deadline)
+    const diffMs = dl.getTime() - now.getTime()
+
+    if (diffMs <= 0) return { text: "Expired", urgent: true, expired: true }
+
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffHours / 24)
+    const remainingHours = diffHours % 24
+
+    if (diffDays > 0) {
+        return { text: `${diffDays}d ${remainingHours}h left`, urgent: diffDays === 0, expired: false }
+    }
+    return { text: `${diffHours}h left`, urgent: true, expired: false }
+}
+
+function getLocation(record: RegistrationRecord): string {
+    const parts = [record.tehsil, record.district, record.state].filter(Boolean)
+    return parts.join(", ")
+}
 
 // ─── Summary Card ────────────────────────────────────────────────────
 function SummaryCard({
@@ -219,22 +239,95 @@ function SortableHead({
     )
 }
 
-// ─── Action Label Helper ─────────────────────────────────────────────
-function getActionLabel(status: LandStatus) {
-    switch (status) {
-        case "verified": return "Manage"
-        case "in-progress": return "Track"
-        case "payment-pending": return "Pay Now"
-        case "draft": return "Continue"
+// ─── Action Logic ────────────────────────────────────────────────────
+function getActionConfig(record: RegistrationRecord): { label: string; href: string; icon: React.ReactNode; variant: "default" | "pay" | "muted" } {
+    switch (record.status) {
+        case "VERIFIED":
+            return {
+                label: "Manage",
+                href: `/dashboard/land-records/${record.bhuSetuId}`,
+                icon: <Eye className="size-3.5" />,
+                variant: "default",
+            }
+        case "IN_PROGRESS":
+            return {
+                label: "Track",
+                href: `/dashboard/land-records/${record.id}`,
+                icon: <Eye className="size-3.5" />,
+                variant: "default",
+            }
+        case "PENDING_PAYMENT": {
+            const timeInfo = getPaymentTimeRemaining(record.paymentDeadline)
+            return {
+                label: timeInfo?.expired ? "Expired" : "Pay Now",
+                href: timeInfo?.expired ? "#" : `/dashboard/registration/review/${record.id}`,
+                icon: <CreditCard className="size-3.5" />,
+                variant: timeInfo?.expired ? "muted" : "pay",
+            }
+        }
+        case "DRAFT":
+            return {
+                label: "Continue",
+                href: `/dashboard/registration/review/${record.id}`,
+                icon: <FileEdit className="size-3.5" />,
+                variant: "default",
+            }
+        case "REJECTED":
+            return {
+                label: "View",
+                href: `/dashboard/land-records/${record.id}`,
+                icon: <AlertCircle className="size-3.5" />,
+                variant: "muted",
+            }
     }
+}
+
+// ─── Loading Skeleton ────────────────────────────────────────────────
+function TableSkeleton() {
+    return (
+        <>
+            {Array.from({ length: 4 }).map((_, i) => (
+                <TableRow key={i} className="animate-pulse">
+                    <TableCell className="px-6 py-4"><div className="h-4 w-24 rounded bg-slate-100" /></TableCell>
+                    <TableCell className="px-6 py-4"><div className="h-4 w-20 rounded bg-slate-100" /></TableCell>
+                    <TableCell className="px-6 py-4"><div className="h-4 w-36 rounded bg-slate-100" /></TableCell>
+                    <TableCell className="px-6 py-4"><div className="h-4 w-16 rounded bg-slate-100" /></TableCell>
+                    <TableCell className="px-6 py-4"><div className="h-5 w-24 rounded-full bg-slate-100" /></TableCell>
+                    <TableCell className="px-6 py-4"><div className="h-4 w-24 rounded bg-slate-100" /></TableCell>
+                    <TableCell className="px-6 py-4"><div className="h-4 w-16 rounded bg-slate-100" /></TableCell>
+                </TableRow>
+            ))}
+        </>
+    )
 }
 
 // ─── Main Component ──────────────────────────────────────────────────
 export default function LandRecords() {
+    const [records, setRecords] = useState<RegistrationRecord[]>([])
+    const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
-    const [statusFilter, setStatusFilter] = useState<LandStatus | "all">("all")
+    const [statusFilter, setStatusFilter] = useState<RegistrationStatus | "all">("all")
     const [sortKey, setSortKey] = useState<SortKey>("lastUpdated")
     const [sortDir, setSortDir] = useState<SortDir>("desc")
+
+    const fetchRecords = useCallback(async () => {
+        try {
+            setLoading(true)
+            const res = await fetch("/api/registrations", { credentials: "include" })
+            if (res.ok) {
+                const data = await res.json()
+                setRecords(data.registrations ?? [])
+            }
+        } catch {
+            // silently fail — show empty state
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
+    useEffect(() => {
+        fetchRecords()
+    }, [fetchRecords])
 
     const handleSort = (key: SortKey) => {
         if (sortKey === key) {
@@ -246,253 +339,364 @@ export default function LandRecords() {
     }
 
     const filteredAndSorted = useMemo(() => {
-        // Filter
-        let result = LAND_PARCELS.filter((parcel) => {
+        let result = records.filter((record) => {
+            const regId = formatRegNumber(record.regYear, record.regNumber)
+            const location = getLocation(record)
             const matchesSearch =
                 searchQuery === "" ||
-                parcel.propertyId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                parcel.location.toLowerCase().includes(searchQuery.toLowerCase())
-            const matchesStatus = statusFilter === "all" || parcel.status === statusFilter
+                regId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                record.ownerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (record.bhuSetuId?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+            const matchesStatus = statusFilter === "all" || record.status === statusFilter
             return matchesSearch && matchesStatus
         })
 
-        // Sort
         result = [...result].sort((a, b) => {
             let cmp = 0
             switch (sortKey) {
+                case "regNumber":
+                    cmp = a.regNumber - b.regNumber
+                    break
                 case "area":
-                    cmp = a.areaNum - b.areaNum
+                    cmp = a.landArea - b.landArea
                     break
                 case "status":
                     cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
                     break
                 case "lastUpdated":
-                    cmp = a.lastUpdatedTs - b.lastUpdatedTs
+                    cmp = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
                     break
             }
             return sortDir === "asc" ? cmp : -cmp
         })
 
         return result
-    }, [searchQuery, statusFilter, sortKey, sortDir])
+    }, [records, searchQuery, statusFilter, sortKey, sortDir])
 
     const counts = {
-        total: LAND_PARCELS.length,
-        pending: LAND_PARCELS.filter(
-            (p) => p.status === "in-progress" || p.status === "payment-pending"
+        total: records.length,
+        pending: records.filter(
+            (r) => r.status === "IN_PROGRESS" || r.status === "PENDING_PAYMENT"
         ).length,
-        history: LAND_PARCELS.filter((p) => p.status === "verified").length,
+        verified: records.filter((r) => r.status === "VERIFIED").length,
     }
 
     const activeFilterLabel =
         FILTER_OPTIONS.find((o) => o.value === statusFilter)?.label ?? "All Statuses"
 
     return (
-        <div className="flex flex-1 flex-col gap-8 p-6 sm:p-10 mx-auto">
-            {/* Page Header */}
-            <div>
-                <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-                    Land Records
-                </h1>
-                <p className="text-slate-500 mt-1">
-                    Secure blockchain-based land management and registry overview.
-                </p>
-            </div>
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                <SummaryCard
-                    icon={<HomeIcon className="size-7 text-primary" />}
-                    iconBg="bg-primary/10"
-                    label="My Properties"
-                    value={String(counts.total).padStart(2, "0")}
-                    unit="Parcels"
-                    actionLabel="View All"
-                    actionHref="#"
-                />
-                <SummaryCard
-                    icon={<Clock className="size-7 text-amber-600" />}
-                    iconBg="bg-amber-500/10"
-                    label="Pending Requests"
-                    value={String(counts.pending).padStart(2, "0")}
-                    unit="Active"
-                    actionLabel="Track"
-                    actionHref="#"
-                />
-                <SummaryCard
-                    icon={<History className="size-7 text-emerald-600" />}
-                    iconBg="bg-emerald-500/10"
-                    label="Verified History"
-                    value={String(counts.history).padStart(2, "0")}
-                    unit="Events"
-                    actionLabel="History"
-                    actionHref="#"
-                />
-            </div>
-
-            {/* Land Parcels Table */}
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                {/* Toolbar */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 p-5">
-                    <h2 className="text-lg font-bold text-slate-900">
-                        Registered Land Parcels
-                    </h2>
-                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                        {/* Search */}
-                        <div className="relative flex-1 sm:flex-none sm:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                            <Input
-                                type="text"
-                                placeholder="Search ID or location..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 text-sm"
-                            />
-                        </div>
-
-                        {/* Status Filter — shadcn DropdownMenu */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
-                                    <Filter className="size-3.5" />
-                                    {activeFilterLabel}
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuLabel className="text-xs text-slate-500">
-                                    Filter by Status
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuRadioGroup
-                                    value={statusFilter}
-                                    onValueChange={(val) =>
-                                        setStatusFilter(val as LandStatus | "all")
-                                    }
-                                >
-                                    {FILTER_OPTIONS.map((opt) => (
-                                        <DropdownMenuRadioItem
-                                            key={opt.value}
-                                            value={opt.value}
-                                            className="text-sm cursor-pointer"
-                                        >
-                                            {opt.label}
-                                        </DropdownMenuRadioItem>
-                                    ))}
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        {/* Export */}
-                        <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
-                            <Download className="size-3.5" />
-                            Export
-                        </Button>
+        <TooltipProvider>
+            <div className="flex flex-1 flex-col gap-8 p-6 sm:p-10 mx-auto">
+                {/* Page Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+                            Land Records
+                        </h1>
+                        <p className="text-slate-500 mt-1">
+                            Secure blockchain-based land management and registry overview.
+                        </p>
                     </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={fetchRecords}
+                        disabled={loading}
+                        className="gap-1.5 text-xs text-slate-500 hover:text-slate-900"
+                    >
+                        <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+                        Refresh
+                    </Button>
                 </div>
 
-                {/* Table */}
-                <Table>
-                    <TableHeader>
-                        <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                            <TableHead className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                Property ID
-                            </TableHead>
-                            <TableHead className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                Location
-                            </TableHead>
-                            <SortableHead
-                                label="Area (Sq. Ft)"
-                                sortKey="area"
-                                currentKey={sortKey}
-                                currentDir={sortDir}
-                                onSort={handleSort}
-                            />
-                            <SortableHead
-                                label="Status"
-                                sortKey="status"
-                                currentKey={sortKey}
-                                currentDir={sortDir}
-                                onSort={handleSort}
-                            />
-                            <SortableHead
-                                label="Last Updated"
-                                sortKey="lastUpdated"
-                                currentKey={sortKey}
-                                currentDir={sortDir}
-                                onSort={handleSort}
-                            />
-                            <TableHead className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                Actions
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredAndSorted.length === 0 ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={6}
-                                    className="px-6 py-12 text-center text-sm text-slate-400"
-                                >
-                                    No land parcels found matching your criteria.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            filteredAndSorted.map((parcel) => {
-                                const statusCfg = STATUS_CONFIG[parcel.status]
-                                return (
-                                    <TableRow
-                                        key={parcel.propertyId}
-                                        className="hover:bg-slate-50/60 transition-colors"
-                                    >
-                                        <TableCell className="px-6 py-4">
-                                            <span className="font-mono text-xs font-bold text-primary">
-                                                {parcel.propertyId}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="px-6 py-4">
-                                            <div className="flex items-center gap-2 text-sm text-slate-700">
-                                                <MapPin className="size-4 text-slate-400 shrink-0" />
-                                                {parcel.location}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="px-6 py-4 font-medium text-sm">
-                                            {parcel.area}
-                                        </TableCell>
-                                        <TableCell className="px-6 py-4">
-                                            <Badge
-                                                variant="outline"
-                                                className={`gap-1.5 px-2.5 py-1 text-xs font-bold ${statusCfg.className}`}
-                                            >
-                                                {statusCfg.icon}
-                                                {statusCfg.label}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="px-6 py-4 text-sm text-slate-500">
-                                            {parcel.lastUpdated}
-                                        </TableCell>
-                                        <TableCell className="px-6 py-4">
-                                            <Link
-                                                href={`/dashboard/land-records/${parcel.propertyId}`}
-                                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-blue-700 transition-colors"
-                                            >
-                                                <Eye className="size-3.5" />
-                                                {getActionLabel(parcel.status)}
-                                            </Link>
-                                        </TableCell>
-                                    </TableRow>
-                                )
-                            })
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                    <SummaryCard
+                        icon={<HomeIcon className="size-7 text-primary" />}
+                        iconBg="bg-primary/10"
+                        label="My Properties"
+                        value={String(counts.total).padStart(2, "0")}
+                        unit="Parcels"
+                        actionLabel="View All"
+                        actionHref="#"
+                    />
+                    <SummaryCard
+                        icon={<Clock className="size-7 text-amber-600" />}
+                        iconBg="bg-amber-500/10"
+                        label="Pending Requests"
+                        value={String(counts.pending).padStart(2, "0")}
+                        unit="Active"
+                        actionLabel="Track"
+                        actionHref="#"
+                    />
+                    <SummaryCard
+                        icon={<History className="size-7 text-emerald-600" />}
+                        iconBg="bg-emerald-500/10"
+                        label="Verified Properties"
+                        value={String(counts.verified).padStart(2, "0")}
+                        unit="Confirmed"
+                        actionLabel="History"
+                        actionHref="#"
+                    />
+                </div>
 
-            {/* Blockchain Notice */}
-            <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pb-4">
-                <ShieldCheck className="size-4" />
-                All records are cryptographically secured and immutable on the
-                national BhuSetu blockchain network.
+
+
+                {/* Land Parcels Table */}
+                <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                    {/* Toolbar */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 p-5">
+                        <h2 className="text-lg font-bold text-slate-900">
+                            Registered Land Parcels
+                        </h2>
+                        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                            {/* Search */}
+                            <div className="relative flex-1 sm:flex-none sm:w-64">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                <Input
+                                    type="text"
+                                    placeholder="Search REG ID, location..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-9 text-sm"
+                                />
+                            </div>
+
+                            {/* Status Filter */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
+                                        <Filter className="size-3.5" />
+                                        {activeFilterLabel}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuLabel className="text-xs text-slate-500">
+                                        Filter by Status
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuRadioGroup
+                                        value={statusFilter}
+                                        onValueChange={(val) =>
+                                            setStatusFilter(val as RegistrationStatus | "all")
+                                        }
+                                    >
+                                        {FILTER_OPTIONS.map((opt) => (
+                                            <DropdownMenuRadioItem
+                                                key={opt.value}
+                                                value={opt.value}
+                                                className="text-sm cursor-pointer"
+                                            >
+                                                {opt.label}
+                                            </DropdownMenuRadioItem>
+                                        ))}
+                                    </DropdownMenuRadioGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            {/* Export */}
+                            <Button variant="outline" size="sm" className="gap-1.5 text-xs font-semibold">
+                                <Download className="size-3.5" />
+                                Export
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Table */}
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+                                <SortableHead
+                                    label="Reg ID"
+                                    sortKey="regNumber"
+                                    currentKey={sortKey}
+                                    currentDir={sortDir}
+                                    onSort={handleSort}
+                                />
+                                <TableHead className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                    Property ID
+                                </TableHead>
+                                <TableHead className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                    Location
+                                </TableHead>
+                                <SortableHead
+                                    label="Area (Sq. Ft)"
+                                    sortKey="area"
+                                    currentKey={sortKey}
+                                    currentDir={sortDir}
+                                    onSort={handleSort}
+                                />
+                                <SortableHead
+                                    label="Status"
+                                    sortKey="status"
+                                    currentKey={sortKey}
+                                    currentDir={sortDir}
+                                    onSort={handleSort}
+                                />
+                                <SortableHead
+                                    label="Last Updated"
+                                    sortKey="lastUpdated"
+                                    currentKey={sortKey}
+                                    currentDir={sortDir}
+                                    onSort={handleSort}
+                                />
+                                <TableHead className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                    Actions
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                <TableSkeleton />
+                            ) : filteredAndSorted.length === 0 ? (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={7}
+                                        className="px-6 py-16 text-center"
+                                    >
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="size-12 rounded-full bg-slate-100 flex items-center justify-center">
+                                                <Search className="size-5 text-slate-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-600">
+                                                    No land records found
+                                                </p>
+                                                <p className="text-xs text-slate-400 mt-1">
+                                                    {records.length === 0
+                                                        ? "Start a new registration to see your records here."
+                                                        : "Try adjusting your search or filter criteria."}
+                                                </p>
+                                            </div>
+                                            {records.length === 0 && (
+                                                <Button asChild size="sm" className="mt-2">
+                                                    <Link href="/dashboard/registration">
+                                                        New Registration
+                                                    </Link>
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredAndSorted.map((record) => {
+                                    const statusCfg = STATUS_CONFIG[record.status]
+                                    const action = getActionConfig(record)
+                                    const timeInfo = record.status === "PENDING_PAYMENT"
+                                        ? getPaymentTimeRemaining(record.paymentDeadline)
+                                        : null
+
+                                    return (
+                                        <TableRow
+                                            key={record.id}
+                                            className="hover:bg-slate-50/60 transition-colors"
+                                        >
+                                            {/* Reg ID */}
+                                            <TableCell className="px-6 py-4">
+                                                <span className="font-mono text-xs font-bold text-primary">
+                                                    {formatRegNumber(record.regYear, record.regNumber)}
+                                                </span>
+                                            </TableCell>
+
+                                            {/* Property ID (BHU ID) — only shown when verified */}
+                                            <TableCell className="px-6 py-4">
+                                                {record.bhuSetuId ? (
+                                                    <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded">
+                                                        {record.bhuSetuId}
+                                                    </span>
+                                                ) : (
+                                                    <Tooltip>
+                                                        <TooltipTrigger>
+                                                            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 italic">
+                                                                <Minus className="size-3" />
+                                                                Pending
+                                                            </span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p className="text-xs">Property ID is assigned after registrar verification & smart contract execution.</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+                                            </TableCell>
+
+                                            {/* Location */}
+                                            <TableCell className="px-6 py-4">
+                                                <div className="flex items-center gap-2 text-sm text-slate-700">
+                                                    <MapPin className="size-4 text-slate-400 shrink-0" />
+                                                    <span className="truncate max-w-[200px]">{getLocation(record)}</span>
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Area */}
+                                            <TableCell className="px-6 py-4 font-medium text-sm">
+                                                {formatArea(record.landArea)}
+                                            </TableCell>
+
+                                            {/* Status */}
+                                            <TableCell className="px-6 py-4">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={`gap-1.5 px-2.5 py-1 text-xs font-bold w-fit ${statusCfg.className}`}
+                                                    >
+                                                        {statusCfg.icon}
+                                                        {statusCfg.label}
+                                                    </Badge>
+                                                    {timeInfo && (
+                                                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold ${timeInfo.expired ? "text-red-600" : timeInfo.urgent ? "text-orange-600" : "text-blue-600"}`}>
+                                                            <Timer className="size-3" />
+                                                            {timeInfo.text}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Last Updated */}
+                                            <TableCell className="px-6 py-4 text-sm text-slate-500">
+                                                {formatDate(record.updatedAt)}
+                                            </TableCell>
+
+                                            {/* Actions */}
+                                            <TableCell className="px-6 py-4">
+                                                {action.variant === "pay" ? (
+                                                    <Link
+                                                        href={action.href}
+                                                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-primary/25 hover:bg-primary/90 transition-colors"
+                                                    >
+                                                        {action.icon}
+                                                        {action.label}
+                                                    </Link>
+                                                ) : action.variant === "muted" ? (
+                                                    <span className="inline-flex items-center gap-1.5 text-sm text-slate-400 cursor-not-allowed">
+                                                        {action.icon}
+                                                        {action.label}
+                                                    </span>
+                                                ) : (
+                                                    <Link
+                                                        href={action.href}
+                                                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-blue-700 transition-colors"
+                                                    >
+                                                        {action.icon}
+                                                        {action.label}
+                                                    </Link>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+
+                {/* Blockchain Notice */}
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pb-4">
+                    <ShieldCheck className="size-4" />
+                    All records are cryptographically secured and immutable on the
+                    national BhuSetu blockchain network.
+                </div>
             </div>
-        </div>
+        </TooltipProvider>
     )
 }

@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import { type NextRequest } from "next/server"
 
 const JWT_SECRET = process.env.JWT_SECRET!
 const SALT_ROUNDS = 12
@@ -56,4 +57,12 @@ export async function verifyOtp(
   hash: string
 ): Promise<boolean> {
   return bcrypt.compare(otp, hash)
+}
+
+// ─── Session ────────────────────────────────────────────────────────────────
+
+export function verifySession(req: NextRequest): JwtPayload | null {
+  const token = req.cookies.get("token")?.value
+  if (!token) return null
+  return verifyToken(token)
 }

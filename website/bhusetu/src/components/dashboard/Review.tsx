@@ -33,7 +33,7 @@ const Review = () => {
     const router = useRouter()
     const [isPaying, setIsPaying] = useState(false)
     const [openingFile, setOpeningFile] = useState<string | null>(null)
-    const { data: regData } = useRegistration()
+    const { data: regData, clearRegistration } = useRegistration()
 
     const landAreaNum = parseFloat(regData.landArea) || 0
     const taxPaid = regData.taxPaid === "Yes"
@@ -94,25 +94,75 @@ const Review = () => {
     const handlePayment = async () => {
         setIsPaying(true)
         try {
+            // Step 1: Create registration in DB
+            const regRes = await fetch("/api/registrations", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    ownerName: regData.ownerName,
+                    landArea: regData.landArea,
+                    taxPaid: regData.taxPaid,
+                    category: regData.category,
+                    northBoundary: regData.northBoundary,
+                    southBoundary: regData.southBoundary,
+                    eastBoundary: regData.eastBoundary,
+                    westBoundary: regData.westBoundary,
+                    pincode: regData.pincode,
+                    state: regData.state,
+                    district: regData.district,
+                    postOffice: regData.postOffice,
+                    tehsil: regData.tehsil,
+                    plotNumber: regData.plotNumber,
+                    documents: regData.documents,
+                }),
+            })
+
+            if (!regRes.ok) {
+                const errData = await regRes.json()
+                alert(errData.error || "Failed to create registration. Please try again.")
+                return
+            }
+
+            const { id: registrationId, regYear, regNumber } = await regRes.json()
+
+            // Step 2: Load Razorpay
             const loaded = await loadRazorpayScript()
             if (!loaded) {
                 alert('Failed to load payment gateway. Please check your connection.')
                 return
             }
 
+            // Step 3: Create Razorpay order
             const orderRes = await fetch('/api/payment/create-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: totalAmount, receipt: `bhusetu_${Date.now()}` }),
+                body: JSON.stringify({ amount: totalAmount, receipt: `bhusetu_reg_${regNumber}_${Date.now()}` }),
             })
             const { orderId, amount, currency } = await orderRes.json()
 
+            // Step 4: Update registration with razorpay order + set PENDING_PAYMENT with 3-day deadline
+            const deadline = new Date()
+            deadline.setDate(deadline.getDate() + 3)
+
+            await fetch(`/api/registrations/${registrationId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    razorpayOrderId: orderId,
+                    status: "PENDING_PAYMENT",
+                    paymentDeadline: deadline.toISOString(),
+                }),
+            })
+
+            // Step 5: Open Razorpay modal
             const options = {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                 amount,
                 currency,
                 name: 'BhuSetu',
-                description: 'Property Registration Fee',
+                description: `Registration REG-${regYear}-${String(regNumber).padStart(5, "0")}`,
                 order_id: orderId,
                 handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
                     const verifyRes = await fetch('/api/payment/verify', {
@@ -122,6 +172,18 @@ const Review = () => {
                     })
                     const data = await verifyRes.json()
                     if (data.success) {
+                        // Update registration to IN_PROGRESS
+                        await fetch(`/api/registrations/${registrationId}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: "include",
+                            body: JSON.stringify({
+                                status: "IN_PROGRESS",
+                                razorpayPaymentId: response.razorpay_payment_id,
+                            }),
+                        })
+                        // Clear localStorage registration data
+                        clearRegistration()
                         router.push('/dashboard/registration/success')
                     } else {
                         alert('Payment verification failed. Please contact support.')

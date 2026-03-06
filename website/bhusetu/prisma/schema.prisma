@@ -37,6 +37,14 @@ enum TransactionStatus {
   REFUNDED
 }
 
+enum RegistrationStatus {
+  DRAFT              // User started but hasn't paid
+  PENDING_PAYMENT    // Payment failed / incomplete — 3-day window
+  IN_PROGRESS        // Payment done, awaiting registrar verification
+  VERIFIED           // Registrar approved → BHU Property ID minted on-chain
+  REJECTED           // Registrar rejected
+}
+
 enum UserRole {
   CITIZEN               // default for all new signups
   REVENUE_INSPECTOR
@@ -59,10 +67,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  otps          Otp[]
-  sessions      Session[]
-  properties    Property[]
-  transactions  Transaction[] @relation("BuyerTransactions")
+  otps            Otp[]
+  sessions        Session[]
+  properties      Property[]
+  transactions    Transaction[] @relation("BuyerTransactions")
+  registrations   Registration[]
 
   @@map("users")
 }
@@ -191,4 +200,59 @@ model Transaction {
   @@index([buyerId])
   @@index([status])
   @@map("transactions")
+}
+
+model Registration {
+  id               String             @id @default(cuid())
+  regYear          Int                // e.g. 2026
+  regNumber        Int                // sequential within year, 1–99999
+  bhuSetuId        String?            @unique // null until smart contract execution post-verification
+
+  // Status & lifecycle
+  status           RegistrationStatus @default(DRAFT)
+  paymentDeadline  DateTime?          // set when status = PENDING_PAYMENT (3-day window)
+
+  // Owner
+  userId           String
+  user             User               @relation(fields: [userId], references: [id])
+
+  // Property details
+  ownerName        String
+  landArea         Float              // sqft
+  taxPaid          Boolean            @default(false)
+  category         String             // Residential, Commercial, etc.
+
+  // Boundaries
+  northBoundary    String
+  southBoundary    String
+  eastBoundary     String
+  westBoundary     String
+
+  // Location
+  pincode          String
+  state            String
+  district         String
+  postOffice       String
+  tehsil           String
+  plotNumber       String
+
+  // Documents (Pinata CIDs stored as JSON array)
+  documents        Json               @default("[]")
+
+  // Fee snapshot at time of registration
+  processingFee    Int                @default(0) // in rupees
+  stampDuty        Int                @default(0) // in rupees
+  totalAmount      Int                @default(0) // in rupees
+
+  // Razorpay references (set after payment)
+  razorpayOrderId  String?
+  razorpayPaymentId String?
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@unique([regYear, regNumber])
+  @@index([userId])
+  @@index([status])
+  @@map("registrations")
 }
