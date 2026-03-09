@@ -7,8 +7,17 @@ import {
   BadgePlus,
   LandPlot,
   RefreshCcw,
+  ClipboardCheck,
+  Map,
+  Files,
+  Activity,
+  ScrollText,
+  PieChart,
+  Scale,
+  LineChart,
   Landmark,
   User,
+  Users,
   ChevronUp,
   Settings,
   LogOut,
@@ -37,13 +46,46 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 
-const navigationItems = [
-  { name: "Search", href: "/dashboard/search", icon: Search, exact: true },
-  { name: "Overview", href: "/dashboard", icon: BarChart3, exact: true },
-  { name: "Registration", href: "/dashboard/registration", icon: BadgePlus },
-  { name: "Land Records", href: "/dashboard/land-records", icon: LandPlot },
-  { name: "Transfer Requests", href: "/dashboard/transfer-requests", icon: RefreshCcw },
-]
+import { LucideIcon } from "lucide-react"
+
+type NavItem = {
+  name: string
+  href: string
+  icon: LucideIcon
+  exact?: boolean
+}
+
+const ALL_NAV_ITEMS: Record<string, NavItem> = {
+  SEARCH: { name: "Search", href: "/dashboard/search", icon: Search, exact: true },
+  OVERVIEW: { name: "Overview", href: "/dashboard", icon: BarChart3, exact: true },
+  REGISTRATION: { name: "Registration", href: "/dashboard/registration", icon: BadgePlus },
+  LAND_RECORDS: { name: "Land Records", href: "/dashboard/land-records", icon: LandPlot },
+  TRANSFER_REQUESTS: { name: "Transfer Requests", href: "/dashboard/transfer-requests", icon: RefreshCcw },
+  VERIFICATION_CASES: { name: "Assigned Verification Cases", href: "/dashboard/verification-cases", icon: ClipboardCheck },
+  FIELD_TASKS: { name: "Field Tasks", href: "/dashboard/field-tasks", icon: Map },
+  ALL_APPLICATIONS: { name: "All Applications", href: "/dashboard/applications", icon: Files },
+  CASE_ACTIVITY_LOGS: { name: "Case Activity Logs", href: "/dashboard/case-logs", icon: Activity },
+  LOGS: { name: "Logs", href: "/dashboard/logs", icon: ScrollText },
+  APPROVAL_STATS: { name: "Approval Statistics", href: "/dashboard/approval-stats", icon: PieChart },
+  DISPUTE_CASES: { name: "Dispute Cases", href: "/dashboard/disputes", icon: Scale },
+  LAND_ANALYTICS: { name: "Land Analytics", href: "/dashboard/land-analytics", icon: LineChart },
+  USERS: { name: "Users", href: "/dashboard/users", icon: Users },
+}
+
+type Role = "CITIZEN" | "REVENUE_INSPECTOR" | "ADDITIONAL_TAHASILDAR" | "TAHASILDAR" | "COLLECTOR" | "ADMIN"
+
+const ROLE_NAV_MAPPING: Record<Role, (keyof typeof ALL_NAV_ITEMS)[]> = {
+  CITIZEN: ["SEARCH", "OVERVIEW", "REGISTRATION", "LAND_RECORDS", "TRANSFER_REQUESTS"],
+  REVENUE_INSPECTOR: ["OVERVIEW", "VERIFICATION_CASES", "FIELD_TASKS", "LAND_RECORDS"],
+  ADDITIONAL_TAHASILDAR: ["OVERVIEW", "VERIFICATION_CASES", "ALL_APPLICATIONS", "LAND_RECORDS", "CASE_ACTIVITY_LOGS", "USERS"],
+  TAHASILDAR: ["OVERVIEW", "VERIFICATION_CASES", "ALL_APPLICATIONS", "LAND_RECORDS", "LOGS", "USERS"],
+  COLLECTOR: ["OVERVIEW", "APPROVAL_STATS", "ALL_APPLICATIONS", "LAND_RECORDS", "LOGS", "DISPUTE_CASES", "LAND_ANALYTICS", "USERS"],
+  ADMIN: [
+    "SEARCH", "OVERVIEW", "REGISTRATION", "LAND_RECORDS", "TRANSFER_REQUESTS",
+    "VERIFICATION_CASES", "FIELD_TASKS", "ALL_APPLICATIONS", "CASE_ACTIVITY_LOGS",
+    "LOGS", "APPROVAL_STATS", "DISPUTE_CASES", "LAND_ANALYTICS", "USERS"
+  ],
+}
 
 const ROLE_LABELS: Record<string, string> = {
   CITIZEN: "Citizen",
@@ -57,6 +99,10 @@ const ROLE_LABELS: Record<string, string> = {
 export function AppSidebar() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
+
+  const userRole = (user?.role as Role) || "CITIZEN"
+  const userNavKeys = ROLE_NAV_MAPPING[userRole] || ROLE_NAV_MAPPING.CITIZEN
+  const navigationItems = userNavKeys.map(key => ALL_NAV_ITEMS[key])
 
   return (
     <Sidebar
@@ -137,7 +183,7 @@ export function AppSidebar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={logout}
                   className="flex items-center gap-2 text-red-600 focus:text-red-600"
                 >

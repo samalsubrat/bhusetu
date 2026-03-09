@@ -178,7 +178,7 @@ const Review = () => {
                             headers: { "Content-Type": "application/json" },
                             credentials: "include",
                             body: JSON.stringify({
-                                status: "IN_PROGRESS",
+                                status: "PENDING_RI_VERIFICATION",
                                 razorpayPaymentId: response.razorpay_payment_id,
                             }),
                         })

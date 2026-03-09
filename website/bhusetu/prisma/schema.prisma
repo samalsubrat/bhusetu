@@ -40,9 +40,10 @@ enum TransactionStatus {
 enum RegistrationStatus {
   DRAFT              // User started but hasn't paid
   PENDING_PAYMENT    // Payment failed / incomplete — 3-day window
-  IN_PROGRESS        // Payment done, awaiting registrar verification
-  VERIFIED           // Registrar approved → BHU Property ID minted on-chain
-  REJECTED           // Registrar rejected
+  PENDING_RI_VERIFICATION    // Payment done, awaiting RI verification
+  PENDING_ADDL_TAHASILDAR    // Verified by RI, awaiting Addl Tahasildar
+  VERIFIED           // Approved → BHU Property ID minted on-chain
+  REJECTED           // Rejected
 }
 
 enum UserRole {

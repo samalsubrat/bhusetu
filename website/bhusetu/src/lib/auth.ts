@@ -29,7 +29,7 @@ export interface JwtPayload {
   role: string
 }
 
-export function signToken(payload: JwtPayload, expiresInSeconds = 7 * 24 * 60 * 60): string {
+export function signToken(payload: JwtPayload, expiresInSeconds = 2 * 60 * 60): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: expiresInSeconds })
 }
 
@@ -65,4 +65,15 @@ export function verifySession(req: NextRequest): JwtPayload | null {
   const token = req.cookies.get("token")?.value
   if (!token) return null
   return verifyToken(token)
+}
+
+import { prisma } from "@/lib/prisma"
+
+export async function getSessionUser(req: NextRequest) {
+  const payload = verifySession(req)
+  if (!payload) return null
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId }
+  })
+  return user
 }

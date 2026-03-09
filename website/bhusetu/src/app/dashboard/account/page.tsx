@@ -310,7 +310,6 @@ export default function AccountPage() {
             <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="flex items-center justify-between p-6 pb-4">
                     <div className="flex items-center gap-2">
-                        <User className="size-4 text-primary" />
                         <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                             Profile Information
                         </h2>
@@ -423,7 +422,6 @@ export default function AccountPage() {
             <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="flex items-center justify-between p-6 pb-4">
                     <div className="flex items-center gap-2">
-                        <KeyRound className="size-4 text-primary" />
                         <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
                             Password & Security
                         </h2>

@@ -53,7 +53,7 @@ import {
 } from "lucide-react"
 
 // ─── Types ───────────────────────────────────────────────────────────
-type RegistrationStatus = "DRAFT" | "PENDING_PAYMENT" | "IN_PROGRESS" | "VERIFIED" | "REJECTED"
+type RegistrationStatus = "DRAFT" | "PENDING_PAYMENT" | "PENDING_RI_VERIFICATION" | "PENDING_ADDL_TAHASILDAR" | "VERIFIED" | "REJECTED"
 type SortKey = "regNumber" | "area" | "status" | "lastUpdated"
 type SortDir = "asc" | "desc"
 
@@ -82,9 +82,10 @@ interface RegistrationRecord {
 const STATUS_ORDER: Record<RegistrationStatus, number> = {
     DRAFT: 0,
     PENDING_PAYMENT: 1,
-    IN_PROGRESS: 2,
-    VERIFIED: 3,
-    REJECTED: 4,
+    PENDING_RI_VERIFICATION: 2,
+    PENDING_ADDL_TAHASILDAR: 3,
+    VERIFIED: 4,
+    REJECTED: 5,
 }
 
 const STATUS_CONFIG: Record<
@@ -96,10 +97,15 @@ const STATUS_CONFIG: Record<
         icon: <CheckCircle2 className="size-3.5" />,
         className: "bg-emerald-100 text-emerald-700 border-emerald-200",
     },
-    IN_PROGRESS: {
-        label: "In Progress",
+    PENDING_RI_VERIFICATION: {
+        label: "Pending RI Insp.",
         icon: <Loader2 className="size-3.5" />,
-        className: "bg-amber-100 text-amber-700 border-amber-200",
+        className: "bg-blue-100 text-blue-700 border-blue-200",
+    },
+    PENDING_ADDL_TAHASILDAR: {
+        label: "Pending Tahasildar",
+        icon: <Loader2 className="size-3.5" />,
+        className: "bg-indigo-100 text-indigo-700 border-indigo-200",
     },
     PENDING_PAYMENT: {
         label: "Payment Pending",
@@ -121,7 +127,8 @@ const STATUS_CONFIG: Record<
 const FILTER_OPTIONS: { value: RegistrationStatus | "all"; label: string }[] = [
     { value: "all", label: "All Statuses" },
     { value: "VERIFIED", label: "Verified" },
-    { value: "IN_PROGRESS", label: "In Progress" },
+    { value: "PENDING_RI_VERIFICATION", label: "Pending RI Insp." },
+    { value: "PENDING_ADDL_TAHASILDAR", label: "Pending Addl Tahasildar" },
     { value: "PENDING_PAYMENT", label: "Payment Pending" },
     { value: "DRAFT", label: "Draft" },
     { value: "REJECTED", label: "Rejected" },
@@ -249,7 +256,8 @@ function getActionConfig(record: RegistrationRecord): { label: string; href: str
                 icon: <Eye className="size-3.5" />,
                 variant: "default",
             }
-        case "IN_PROGRESS":
+        case "PENDING_RI_VERIFICATION":
+        case "PENDING_ADDL_TAHASILDAR":
             return {
                 label: "Track",
                 href: `/dashboard/land-records/${record.id}`,
@@ -377,7 +385,7 @@ export default function LandRecords() {
     const counts = {
         total: records.length,
         pending: records.filter(
-            (r) => r.status === "IN_PROGRESS" || r.status === "PENDING_PAYMENT"
+            (r) => r.status === "PENDING_RI_VERIFICATION" || r.status === "PENDING_ADDL_TAHASILDAR" || r.status === "PENDING_PAYMENT"
         ).length,
         verified: records.filter((r) => r.status === "VERIFIED").length,
     }

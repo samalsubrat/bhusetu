@@ -51,8 +51,7 @@ export async function POST(req: NextRequest) {
       role: user.role,
     })
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000)
     await prisma.session.create({
       data: { userId: user.id, token, expiresAt },
     })
@@ -72,7 +71,7 @@ export async function POST(req: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 7 * 24 * 60 * 60,
+      maxAge: 2 * 60 * 60, // 2 hours
     })
 
     return response
