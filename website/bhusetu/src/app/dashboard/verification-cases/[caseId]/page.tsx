@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use, lazy, Suspense } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -27,6 +28,7 @@ import {
     ExternalLink,
     RefreshCw,
     TriangleAlert,
+    Link2,
 } from "lucide-react"
 
 const GISMap = lazy(() => import("@/components/dashboard/GISMap"))
@@ -77,6 +79,9 @@ interface RegistrationData {
 // ─── Modal state types ─────────────────────────────────────────────────────────
 type ModalState =
     | { type: "confirm"; action: "APPROVE" | "REJECT" }
+    | { type: "blockchain-confirm" }
+    | { type: "blockchain-processing" }
+    | { type: "blockchain-success"; txHash: string; blockNumber: number; bhuSetuId: string }
     | { type: "success"; action: "APPROVE" | "REJECT" }
     | { type: "error"; message: string }
     | null
@@ -131,6 +136,7 @@ export default function VerificationCaseDetailPage({
 }) {
     const { caseId } = use(params)
     const router = useRouter()
+    const { user: currentUser } = useAuth()
     const [registration, setRegistration] = useState<RegistrationData | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -165,6 +171,9 @@ export default function VerificationCaseDetailPage({
         setModal({ type: "confirm", action })
     }
 
+    // Detect if this approval will trigger blockchain (PENDING_ADDL_TAHASILDAR → VERIFIED)
+    const willTriggerBlockchain = registration?.status === "PENDING_ADDL_TAHASILDAR"
+
     // Step 2: confirmed — run the API call
     const handleActionConfirm = async () => {
         if (modal?.type !== "confirm") return
@@ -185,11 +194,42 @@ export default function VerificationCaseDetailPage({
                 throw new Error(body.error || "Action failed")
             }
 
-            setModal({ type: "success", action })
+            // If this was an APPROVE on PENDING_ADDL_TAHASILDAR → show blockchain confirmation
+            if (action === "APPROVE" && willTriggerBlockchain) {
+                setModal({ type: "blockchain-confirm" })
+            } else {
+                setModal({ type: "success", action })
+            }
         } catch (err: any) {
             setModal({ type: "error", message: err.message })
         } finally {
             setProcessingAction(null)
+        }
+    }
+
+    // Step 3: execute smart contract
+    const handleBlockchainExecute = async () => {
+        setModal({ type: "blockchain-processing" })
+        try {
+            const res = await fetch(`/api/verification-cases/${caseId}/blockchain`, {
+                method: "POST",
+                credentials: "include",
+            })
+
+            if (!res.ok) {
+                const body = await res.json()
+                throw new Error(body.error || "Blockchain execution failed")
+            }
+
+            const data = await res.json()
+            setModal({
+                type: "blockchain-success",
+                txHash: data.txHash,
+                blockNumber: data.blockNumber,
+                bhuSetuId: data.bhuSetuId,
+            })
+        } catch (err: any) {
+            setModal({ type: "error", message: err.message })
         }
     }
 
@@ -284,7 +324,7 @@ export default function VerificationCaseDetailPage({
     return (
         <>
             {/* ── Confirm modal ──────────────────────────────────────── */}
-            <Dialog open={modal?.type === "confirm"} onOpenChange={(open) => !open && setModal(null)}>
+            <Dialog open={modal?.type === "confirm"} onOpenChange={(open: boolean) => !open && setModal(null)}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <div className={`mx-auto mb-2 size-12 rounded-full flex items-center justify-center ${isApprove ? "bg-green-100" : "bg-red-100"}`}>
@@ -317,10 +357,121 @@ export default function VerificationCaseDetailPage({
                 </DialogContent>
             </Dialog>
 
-            {/* ── Success modal ──────────────────────────────────────── */}
+            {/* ── Blockchain confirm modal ────────────────────────────── */}
+            <Dialog open={modal?.type === "blockchain-confirm"} onOpenChange={(open: boolean) => !open && setModal(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <div className="mx-auto mb-2 size-14 rounded-full bg-linear-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
+                            <Link2 className="size-7 text-indigo-600" />
+                        </div>
+                        <DialogTitle className="text-center">Execute Smart Contract</DialogTitle>
+                        <DialogDescription className="text-center">
+                            The case has been approved. Would you like to record this land registration on the blockchain? This will create an immutable, tamper-proof record of the property.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-3 text-xs text-indigo-700 space-y-1 mt-1">
+                        <p className="font-semibold">What happens next:</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                            <li>All registration details will be written on-chain</li>
+                            <li>Document CIDs are linked in the smart contract</li>
+                            <li>A unique BHU Property ID is minted</li>
+                            <li>The transaction hash will be stored as proof</li>
+                        </ul>
+                    </div>
+                    <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 mt-2">
+                        <Button variant="outline" className="w-full sm:w-auto" onClick={() => {
+                            setModal(null)
+                            router.push("/dashboard/verification-cases")
+                        }}>
+                            Skip for Now
+                        </Button>
+                        <Button
+                            className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+                            onClick={handleBlockchainExecute}
+                        >
+                            <Link2 className="size-4" />
+                            Execute Smart Contract
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Blockchain processing modal ─────────────────────────── */}
+            <Dialog open={modal?.type === "blockchain-processing"} onOpenChange={() => {}}>
+                <DialogContent className="sm:max-w-md" onInteractOutside={(e: Event) => e.preventDefault()}>
+                    <DialogHeader>
+                        <div className="mx-auto mb-2 size-14 rounded-full bg-linear-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
+                            <Loader2 className="size-7 text-indigo-600 animate-spin" />
+                        </div>
+                        <DialogTitle className="text-center">Recording on Blockchain</DialogTitle>
+                        <DialogDescription className="text-center">
+                            Please wait while the smart contract is being executed. This may take a few seconds...
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex items-center justify-center py-2">
+                        <div className="flex gap-1">
+                            <div className="size-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <div className="size-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                            <div className="size-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Blockchain success modal ─────────────────────────────── */}
+            <Dialog
+                open={modal?.type === "blockchain-success"}
+                onOpenChange={(open: boolean) => {
+                    if (!open) {
+                        setModal(null)
+                        router.push("/dashboard/verification-cases")
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <div className="mx-auto mb-2 size-14 rounded-full bg-linear-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                            <CheckCircle className="size-7 text-green-600" />
+                        </div>
+                        <DialogTitle className="text-center">Blockchain Record Created!</DialogTitle>
+                        <DialogDescription className="text-center">
+                            The land registration has been permanently recorded on the blockchain.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {modal?.type === "blockchain-success" && (
+                        <div className="rounded-lg border border-green-100 bg-green-50/50 p-3 text-xs space-y-2 mt-1">
+                            <div>
+                                <span className="text-slate-500 font-medium">BHU Property ID</span>
+                                <p className="font-bold text-slate-900 font-mono">{modal.bhuSetuId}</p>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 font-medium">Transaction Hash</span>
+                                <p className="font-mono text-slate-700 break-all">{modal.txHash}</p>
+                            </div>
+                            <div>
+                                <span className="text-slate-500 font-medium">Block Number</span>
+                                <p className="font-mono text-slate-700">{modal.blockNumber}</p>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter className="mt-2">
+                        <Button
+                            className="w-full bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => {
+                                setModal(null)
+                                router.push("/dashboard/verification-cases")
+                            }}
+                        >
+                            Back to Cases
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Success modal (non-blockchain) ──────────────────────── */}
             <Dialog
                 open={modal?.type === "success"}
-                onOpenChange={(open) => {
+                onOpenChange={(open: boolean) => {
                     if (!open) {
                         setModal(null)
                         router.push("/dashboard/verification-cases")
@@ -355,7 +506,7 @@ export default function VerificationCaseDetailPage({
             </Dialog>
 
             {/* ── Error modal ────────────────────────────────────────── */}
-            <Dialog open={modal?.type === "error"} onOpenChange={(open) => !open && setModal(null)}>
+            <Dialog open={modal?.type === "error"} onOpenChange={(open: boolean) => !open && setModal(null)}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <div className="mx-auto mb-2 size-12 rounded-full bg-red-100 flex items-center justify-center">
