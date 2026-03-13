@@ -20,14 +20,23 @@ const ROLE_LABELS: Record<string, string> = {
     ADMIN: "Admin",
 }
 
-const ALL_ROLES = [
-    "CITIZEN",
-    "REVENUE_INSPECTOR",
-    "ADDITIONAL_TAHASILDAR",
-    "TAHASILDAR",
-    "COLLECTOR",
-    "ADMIN"
-]
+const ROLE_HIERARCHY: Record<string, number> = {
+    CITIZEN: 0,
+    REVENUE_INSPECTOR: 1,
+    ADDITIONAL_TAHASILDAR: 2,
+    TAHASILDAR: 3,
+    COLLECTOR: 4,
+    ADMIN: 5,
+}
+
+function getAssignableRoles(actorRole: string): string[] {
+    if (actorRole === "ADDITIONAL_TAHASILDAR") {
+        return ["REVENUE_INSPECTOR"]
+    }
+    return Object.keys(ROLE_HIERARCHY).filter(
+        (r) => ROLE_HIERARCHY[r] <= ROLE_HIERARCHY[actorRole]
+    )
+}
 
 export default function UsersPage() {
     const { user: currentUser } = useAuth()
@@ -156,26 +165,36 @@ export default function UsersPage() {
                                             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 uppercase tracking-widest text-[10px]">
                                                 {ROLE_LABELS[u.role] ?? u.role} (You)
                                             </Badge>
-                                        ) : (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger className="flex items-center justify-between w-full min-w-[150px] bg-white border border-slate-200 rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 transition-colors uppercase tracking-wider text-slate-700">
+                                        ) : (() => {
+                                            const assignable = getAssignableRoles(currentUser?.role ?? "")
+                                            // Addl. Tahasildar can only act on Citizens
+                                            const isLocked =
+                                                currentUser?.role === "ADDITIONAL_TAHASILDAR" && u.role !== "CITIZEN"
+                                            return isLocked ? (
+                                                <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 uppercase tracking-widest text-[10px]">
                                                     {ROLE_LABELS[u.role] ?? u.role}
-                                                    <ChevronDown className="size-3 opacity-50" />
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-[180px]">
-                                                    {ALL_ROLES.map((roleKey) => (
-                                                        <DropdownMenuItem
-                                                            key={roleKey}
-                                                            onClick={() => handleRoleChange(u.id, roleKey)}
-                                                            className="text-xs uppercase tracking-wider font-semibold cursor-pointer flex justify-between items-center"
-                                                        >
-                                                            {ROLE_LABELS[roleKey]}
-                                                            {u.role === roleKey && <Check className="size-3 text-blue-600" />}
-                                                        </DropdownMenuItem>
-                                                    ))}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
+                                                </Badge>
+                                            ) : (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger className="flex items-center justify-between w-full min-w-[150px] bg-white border border-slate-200 rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 transition-colors uppercase tracking-wider text-slate-700">
+                                                        {ROLE_LABELS[u.role] ?? u.role}
+                                                        <ChevronDown className="size-3 opacity-50" />
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-[180px]">
+                                                        {assignable.map((roleKey) => (
+                                                            <DropdownMenuItem
+                                                                key={roleKey}
+                                                                onClick={() => handleRoleChange(u.id, roleKey)}
+                                                                className="text-xs uppercase tracking-wider font-semibold cursor-pointer flex justify-between items-center"
+                                                            >
+                                                                {ROLE_LABELS[roleKey]}
+                                                                {u.role === roleKey && <Check className="size-3 text-blue-600" />}
+                                                            </DropdownMenuItem>
+                                                        ))}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )
+                                        })()}
                                     </td>
                                 </tr>
                             ))}

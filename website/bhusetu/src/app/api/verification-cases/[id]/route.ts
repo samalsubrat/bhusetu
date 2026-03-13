@@ -115,3 +115,47 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         )
     }
 }
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        const resolvedParams = await params
+        const { id } = resolvedParams
+        const session = await getSessionUser(req)
+
+        if (!session) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+
+        const registration = await prisma.registration.findUnique({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                    }
+                }
+            }
+        })
+
+        if (!registration) {
+            return NextResponse.json({ error: "Registration not found" }, { status: 404 })
+        }
+
+        const payload = JSON.parse(
+            JSON.stringify(registration, (key, value) =>
+                typeof value === 'bigint' ? value.toString() : value
+            )
+        )
+
+        return NextResponse.json({ registration: payload })
+    } catch (error) {
+        console.error("[GET_CASE]", error)
+        return NextResponse.json(
+            { error: "Failed to load case" },
+            { status: 500 }
+        )
+    }
+}

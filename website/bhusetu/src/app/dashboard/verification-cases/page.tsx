@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
-import { Loader2, ShieldCheck, AlertCircle, RefreshCw, XCircle, CheckCircle } from "lucide-react"
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -58,11 +59,10 @@ function getStatusBadge(status: string) {
 
 export default function VerificationCasesPage() {
     const { user: currentUser } = useAuth()
+    const router = useRouter()
     const [cases, setCases] = useState<VerificationCase[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
-
-    const [processingId, setProcessingId] = useState<string | null>(null)
 
     useEffect(() => {
         fetchCases()
@@ -79,33 +79,6 @@ export default function VerificationCasesPage() {
             setError(err.message)
         } finally {
             setLoading(false)
-        }
-    }
-
-    const handleAction = async (id: string, action: "APPROVE" | "REJECT") => {
-        try {
-            if (!confirm(`Are you sure you want to ${action.toLowerCase()} this case?`)) return
-
-            setProcessingId(id)
-            const res = await fetch(`/api/verification-cases/${id}`, {
-                method: "PATCH",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action })
-            })
-
-            if (!res.ok) {
-                const body = await res.json()
-                throw new Error(body.error || "Action failed")
-            }
-
-            // Case updated successfully! We can visually remove it from the list since it advanced to the next state
-            alert(`Successfully ${action.toLowerCase()}d!`)
-            setCases(prev => prev.filter(c => c.id !== id))
-        } catch (err: any) {
-            alert(`Error: ${err.message}`)
-        } finally {
-            setProcessingId(null)
         }
     }
 
@@ -133,7 +106,7 @@ export default function VerificationCasesPage() {
     }
 
     return (
-        <div className="p-6 sm:p-10 max-w-7xl mx-auto w-full space-y-8">
+        <div className="p-6 sm:p-10 mx-auto w-full space-y-8">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
@@ -158,13 +131,16 @@ export default function VerificationCasesPage() {
                                 <th className="p-4">Owner Name</th>
                                 <th className="p-4">Property Location</th>
                                 <th className="p-4">Submitted Date</th>
-                                <th className="p-4">State</th>
-                                <th className="p-4 pr-6 text-center">Actions</th>
+                                <th className="p-4 pr-6">State</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-sm">
                             {cases.map((c) => (
-                                <tr key={c.id} className="hover:bg-slate-50/50 transition-colors">
+                                <tr
+                                    key={c.id}
+                                    className="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                                    onClick={() => router.push(`/dashboard/verification-cases/${c.id}`)}
+                                >
                                     <td className="p-4 pl-6 font-mono font-bold text-slate-700">
                                         {formatRegNumber(c.regYear, c.regNumber)}
                                     </td>
@@ -182,32 +158,8 @@ export default function VerificationCasesPage() {
                                             year: "numeric"
                                         })}
                                     </td>
-                                    <td className="p-4">
-                                        {getStatusBadge(c.status)}
-                                    </td>
                                     <td className="p-4 pr-6">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200 h-8 gap-1.5"
-                                                disabled={processingId === c.id}
-                                                onClick={() => handleAction(c.id, "APPROVE")}
-                                            >
-                                                {processingId === c.id ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle className="size-3.5" />}
-                                                Verify & Advance
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 border-red-200 h-8 gap-1.5 px-2"
-                                                disabled={processingId === c.id}
-                                                onClick={() => handleAction(c.id, "REJECT")}
-                                                title="Reject Application"
-                                            >
-                                                <XCircle className="size-3.5" />
-                                            </Button>
-                                        </div>
+                                        {getStatusBadge(c.status)}
                                     </td>
                                 </tr>
                             ))}

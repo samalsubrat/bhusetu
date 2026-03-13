@@ -5,7 +5,6 @@ import { verifySession, getSessionUser } from "@/lib/auth"
 // Defined roles that can modify roles
 const allowedRoles = ["ADDITIONAL_TAHASILDAR", "TAHASILDAR", "COLLECTOR", "ADMIN"]
 
-// Hierarchy of roles to prevent a lower level admin from making someone a higher level admin (optional, simple check here validates role presence)
 const roleHierarchy: Record<string, number> = {
     CITIZEN: 0,
     REVENUE_INSPECTOR: 1,
@@ -13,6 +12,18 @@ const roleHierarchy: Record<string, number> = {
     TAHASILDAR: 3,
     COLLECTOR: 4,
     ADMIN: 5,
+}
+
+// What roles a given actor is permitted to assign
+function getAssignableRoles(actorRole: string): string[] {
+    if (actorRole === "ADDITIONAL_TAHASILDAR") {
+        // Addl. Tahasildar can ONLY promote a Citizen to Revenue Inspector
+        return ["REVENUE_INSPECTOR"]
+    }
+    // All higher roles can assign any role up to (but not exceeding) their own level
+    return Object.keys(roleHierarchy).filter(
+        (r) => roleHierarchy[r] <= roleHierarchy[actorRole]
+    )
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
@@ -35,9 +46,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ us
             return NextResponse.json({ error: "Forbidden. Insufficient permissions." }, { status: 403 })
         }
 
-        // Optional: Protect higher level logic. For now, assuming anyone with access can change anyone else to any role. 
-        // If you want hierarchy restrictions: 
-        // if(roleHierarchy[session.role] < roleHierarchy[role]) { return Forbidden }
+        const assignable = getAssignableRoles(session.role)
+        if (!assignable.includes(role)) {
+            return NextResponse.json(
+                { error: `Your role (${session.role}) is not permitted to assign the role '${role}'.` },
+                { status: 403 }
+            )
+        }
+
+        // For Addl. Tahasildar, additionally enforce the target must currently be a CITIZEN
+        if (session.role === "ADDITIONAL_TAHASILDAR") {
+            const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+            if (!targetUser || targetUser.role !== "CITIZEN") {
+                return NextResponse.json(
+                    { error: "Addl. Tahasildar can only promote Citizens to Revenue Inspector." },
+                    { status: 403 }
+                )
+            }
+        }
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
