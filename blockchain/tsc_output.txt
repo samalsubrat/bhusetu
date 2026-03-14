@@ -1,0 +1,4 @@
+hardhat.config.ts(1,30): error TS2307: Cannot find module 'hardhat/config' or its corresponding type declarations.
+  There are types at 'D:/2026-PROJECTS/BhuSetu/blockchain/node_modules/hardhat/dist/src/config.d.ts', but this result could not be resolved under your current 'moduleResolution' setting. Consider updating to 'node16', 'nodenext', or 'bundler'.
+hardhat.config.ts(2,27): error TS2307: Cannot find module '@nomicfoundation/hardhat-ethers' or its corresponding type declarations.
+  There are types at 'D:/2026-PROJECTS/BhuSetu/blockchain/node_modules/@nomicfoundation/hardhat-ethers/dist/src/index.d.ts', but this result could not be resolved under your current 'moduleResolution' setting. Consider updating to 'node16', 'nodenext', or 'bundler'.
