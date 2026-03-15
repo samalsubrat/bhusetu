@@ -30,11 +30,11 @@ const ROLE_HIERARCHY: Record<string, number> = {
 }
 
 function getAssignableRoles(actorRole: string): string[] {
-    if (actorRole === "ADDITIONAL_TAHASILDAR") {
-        return ["REVENUE_INSPECTOR"]
+    if (actorRole === "ADMIN") {
+        return Object.keys(ROLE_HIERARCHY)
     }
     return Object.keys(ROLE_HIERARCHY).filter(
-        (r) => ROLE_HIERARCHY[r] <= ROLE_HIERARCHY[actorRole]
+        (r) => ROLE_HIERARCHY[r] < ROLE_HIERARCHY[actorRole]
     )
 }
 
@@ -107,7 +107,7 @@ export default function UsersPage() {
     }
 
     return (
-        <div className="p-6 sm:p-10 max-w-7xl mx-auto w-full space-y-8">
+        <div className="p-6 sm:p-10 mx-auto w-full space-y-8">
             <div>
                 <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
                     User Management
@@ -167,9 +167,7 @@ export default function UsersPage() {
                                             </Badge>
                                         ) : (() => {
                                             const assignable = getAssignableRoles(currentUser?.role ?? "")
-                                            // Addl. Tahasildar can only act on Citizens
-                                            const isLocked =
-                                                currentUser?.role === "ADDITIONAL_TAHASILDAR" && u.role !== "CITIZEN"
+                                            const isLocked = !assignable.includes(u.role)
                                             return isLocked ? (
                                                 <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 uppercase tracking-widest text-[10px]">
                                                     {ROLE_LABELS[u.role] ?? u.role}

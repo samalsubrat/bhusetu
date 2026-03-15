@@ -16,13 +16,11 @@ const roleHierarchy: Record<string, number> = {
 
 // What roles a given actor is permitted to assign
 function getAssignableRoles(actorRole: string): string[] {
-    if (actorRole === "ADDITIONAL_TAHASILDAR") {
-        // Addl. Tahasildar can ONLY promote a Citizen to Revenue Inspector
-        return ["REVENUE_INSPECTOR"]
+    if (actorRole === "ADMIN") {
+        return Object.keys(roleHierarchy)
     }
-    // All higher roles can assign any role up to (but not exceeding) their own level
     return Object.keys(roleHierarchy).filter(
-        (r) => roleHierarchy[r] <= roleHierarchy[actorRole]
+        (r) => roleHierarchy[r] < roleHierarchy[actorRole]
     )
 }
 
@@ -54,15 +52,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ us
             )
         }
 
-        // For Addl. Tahasildar, additionally enforce the target must currently be a CITIZEN
-        if (session.role === "ADDITIONAL_TAHASILDAR") {
-            const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
-            if (!targetUser || targetUser.role !== "CITIZEN") {
-                return NextResponse.json(
-                    { error: "Addl. Tahasildar can only promote Citizens to Revenue Inspector." },
-                    { status: 403 }
-                )
-            }
+        const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+        if (!targetUser) {
+            return NextResponse.json({ error: "User not found." }, { status: 404 })
+        }
+        if (!assignable.includes(targetUser.role)) {
+            return NextResponse.json(
+                { error: `You do not have permission to modify a user with the role '${targetUser.role}'.` },
+                { status: 403 }
+            )
         }
 
         const updatedUser = await prisma.user.update({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { verifySession } from "@/lib/auth"
+import { verifySession, getSessionUser } from "@/lib/auth"
 
 // ─── GET  /api/registrations/[id] — Get a single registration ────────────────
 export async function GET(
@@ -8,7 +8,7 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = verifySession(req)
+        const session = await getSessionUser(req)
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
@@ -23,8 +23,11 @@ export async function GET(
             return NextResponse.json({ error: "Registration not found" }, { status: 404 })
         }
 
-        // Ensure user can only access their own registrations
-        if (registration.userId !== session.userId) {
+        // Ensure user can only access their own registrations, unless they are an officer
+        const allowedOfficerRoles = ["REVENUE_INSPECTOR", "ADDITIONAL_TAHASILDAR", "TAHASILDAR", "COLLECTOR", "ADMIN"]
+        const isOfficer = allowedOfficerRoles.includes(session.role)
+
+        if (registration.userId !== session.id && !isOfficer) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
 
@@ -41,7 +44,7 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = verifySession(req)
+        const session = await getSessionUser(req)
         if (!session) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
@@ -57,7 +60,10 @@ export async function PATCH(
             return NextResponse.json({ error: "Registration not found" }, { status: 404 })
         }
 
-        if (registration.userId !== session.userId) {
+        const allowedOfficerRoles = ["REVENUE_INSPECTOR", "ADDITIONAL_TAHASILDAR", "TAHASILDAR", "COLLECTOR", "ADMIN"]
+        const isOfficer = allowedOfficerRoles.includes(session.role)
+
+        if (registration.userId !== session.id && !isOfficer) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
 
