@@ -425,7 +425,7 @@ export default function LandRecords() {
                         iconBg="bg-primary/10"
                         label="My Properties"
                         value={String(counts.total).padStart(2, "0")}
-                        unit="Parcels"
+                        unit="Records"
                         actionLabel="View All"
                         actionHref="#"
                     />
@@ -451,12 +451,12 @@ export default function LandRecords() {
 
 
 
-                {/* Land Parcels Table */}
+                {/* Land Records Table */}
                 <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                     {/* Toolbar */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 p-5">
                         <h2 className="text-lg font-bold text-slate-900">
-                            Registered Land Parcels
+                            Registered Land Records
                         </h2>
                         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                             {/* Search */}
