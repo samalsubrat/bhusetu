@@ -30,7 +30,7 @@ contract LandRegistry {
 
     struct FeeSnapshot {
         uint256 processingFee;   // in rupees
-        uint256 stampDuty;       // in rupees
+        uint256 stampDuty;         // in rupees
         uint256 totalAmount;     // in rupees
     }
 

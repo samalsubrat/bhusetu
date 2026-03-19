@@ -10,6 +10,17 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 import {
     Loader2,
     ChevronLeft,
@@ -30,6 +41,7 @@ import {
     IndianRupee,
     AlertCircle,
     Clock,
+    Store,
 } from "lucide-react"
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -205,6 +217,14 @@ export default function PropertyDetailPage({
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [openingFile, setOpeningFile] = useState<string | null>(null)
+    const [isOwner, setIsOwner] = useState(false)
+    const [isListDialogOpen, setIsListDialogOpen] = useState(false)
+    const [listingPrice, setListingPrice] = useState("")
+    const [listingTitle, setListingTitle] = useState("")
+    const [listingDesc, setListingDesc] = useState("")
+    const [listingEmail, setListingEmail] = useState("")
+    const [listingPhone, setListingPhone] = useState("")
+    const [isListing, setIsListing] = useState(false)
 
     useEffect(() => {
         async function fetchProperty() {
@@ -220,6 +240,7 @@ export default function PropertyDetailPage({
                 const data = await res.json()
                 setProperty(data.registration)
                 setBlockchain(data.blockchain)
+                setIsOwner(data.isOwner)
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Something went wrong")
             } finally {
@@ -228,6 +249,33 @@ export default function PropertyDetailPage({
         }
         fetchProperty()
     }, [propertyId])
+
+    const handleListProperty = async (e: React.FormEvent) => {
+        e.preventDefault()
+        try {
+            setIsListing(true)
+            const res = await fetch("/api/marketplace", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    registrationId: property?.id,
+                    title: listingTitle,
+                    description: listingDesc,
+                    listedPriceInRupees: Number(listingPrice),
+                    contactEmail: listingEmail,
+                    contactPhone: listingPhone
+                })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Failed to list property")
+            setIsListDialogOpen(false)
+            router.push(`/dashboard/marketplace/${data.listing.id}`)
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to list property")
+        } finally {
+            setIsListing(false)
+        }
+    }
 
     const handleOpenFile = async (file: UploadedDocument) => {
         try {
@@ -321,14 +369,67 @@ export default function PropertyDetailPage({
                     </div>
 
                     {/* Quick action */}
-                    <Button
-                        variant="outline"
-                        className="gap-1.5 text-xs border-slate-200 shrink-0"
-                        onClick={() => window.print()}
-                    >
-                        <FileText className="size-3.5" />
-                        Print Record
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {isVerified && isOwner && (
+                            <Dialog open={isListDialogOpen} onOpenChange={setIsListDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-white shadow-md">
+                                        <Store className="size-3.5" />
+                                        List to Market
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[425px]">
+                                    <DialogHeader>
+                                        <DialogTitle>List Property</DialogTitle>
+                                        <DialogDescription>
+                                            Publish your verified property on the marketplace to receive offers from buyers.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <form onSubmit={handleListProperty}>
+                                        <div className="grid gap-4 py-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold">Listing Title</label>
+                                                <Input required value={listingTitle} onChange={e => setListingTitle(e.target.value)} placeholder="e.g. 1000 sq.ft Residential Plot in Bhubaneswar" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold">Asking Price (₹)</label>
+                                                <Input required type="number" min="0" value={listingPrice} onChange={e => setListingPrice(e.target.value)} placeholder="e.g. 5000000" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-semibold">Description</label>
+                                                <Textarea value={listingDesc} onChange={e => setListingDesc(e.target.value)} placeholder="Highlights about the property, nearby amenities, etc." className="resize-none" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-semibold">Contact Email</label>
+                                                    <Input type="email" value={listingEmail} onChange={e => setListingEmail(e.target.value)} placeholder="Optional" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-semibold">Contact Phone</label>
+                                                    <Input value={listingPhone} onChange={e => setListingPhone(e.target.value)} placeholder="Optional" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button type="button" variant="outline" onClick={() => setIsListDialogOpen(false)}>Cancel</Button>
+                                            <Button type="submit" disabled={isListing}>
+                                                {isListing && <Loader2 className="size-4 animate-spin mr-2" />}
+                                                Publish Listing
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
+                        )}
+                        <Button
+                            variant="outline"
+                            className="gap-1.5 text-xs border-slate-200 shrink-0"
+                            onClick={() => window.print()}
+                        >
+                            <FileText className="size-3.5" />
+                            Print Record
+                        </Button>
+                    </div>
                 </div>
             </div>
 

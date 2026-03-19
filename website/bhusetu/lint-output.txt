@@ -1,0 +1,192 @@
+
+> bhusetu@0.1.0 lint
+> eslint
+
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\api\registrations\[id]\route.ts
+  3:10  warning  'verifySession' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\api\users\[userId]\role\route.ts
+   3:10  warning  'verifySession' is defined but never used  @typescript-eslint/no-unused-vars
+  68:35  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\api\users\route.ts
+  3:10  warning  'verifySession' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\api\verification-cases\[id]\blockchain\route.ts
+  65:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\api\verification-cases\[id]\route.ts
+   3:10  warning  'verifySession' is defined but never used              @typescript-eslint/no-unused-vars
+  69:17  error    'updateData' is never reassigned. Use 'const' instead  prefer-const
+  69:29  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  85:87  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\api\verification-cases\route.ts
+   3:10  warning  'verifySession' is defined but never used  @typescript-eslint/no-unused-vars
+  27:50  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\dashboard\all-land-records\page.tsx
+   5:32  warning  'FileText' is defined but never used              @typescript-eslint/no-unused-vars
+   5:64  warning  'Filter' is defined but never used                @typescript-eslint/no-unused-vars
+   5:72  warning  'Download' is defined but never used              @typescript-eslint/no-unused-vars
+   7:10  warning  'Button' is defined but never used                @typescript-eslint/no-unused-vars
+  38:19  warning  'currentUser' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  55:23  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\dashboard\applications\page.tsx
+    6:43  warning  'Landmark' is defined but never used              @typescript-eslint/no-unused-vars
+   90:19  warning  'currentUser' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  107:23  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\dashboard\land-records\[propertyId]\page.tsx
+  31:5  warning  'CreditCard' is defined but never used  @typescript-eslint/no-unused-vars
+  36:5  warning  'Link2' is defined but never used       @typescript-eslint/no-unused-vars
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\dashboard\marketplace\[listingId]\page.tsx
+    5:8    warning  'Link' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+    8:52   warning  'CardDescription' is defined but never used                                                                      @typescript-eslint/no-unused-vars
+   28:5    warning  'XCircle' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+  129:8    warning  React Hook useEffect has a missing dependency: 'fetchListing'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  391:129  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                  react/no-unescaped-entities
+  541:53   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                  react/no-unescaped-entities
+  541:69   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                  react/no-unescaped-entities
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\dashboard\marketplace\page.tsx
+   20:5   warning  'IndianRupee' is defined but never used                          @typescript-eslint/no-unused-vars
+  168:38  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\dashboard\users\page.tsx
+  57:23  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:87  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:18  warning  'err' is defined but never used           @typescript-eslint/no-unused-vars
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\dashboard\verification-cases\[caseId]\page.tsx
+  139:19  warning  'currentUser' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  203:23  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  231:23  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\dashboard\verification-cases\page.tsx
+  61:19  warning  'currentUser' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  78:23  error    Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\marketplace\[propertyId]\buy\page.tsx
+  25:28  error    React Hook "React.use" is called in function "page" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word "use"                                              react-hooks/rules-of-hooks
+  49:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\marketplace\[propertyId]\page.tsx
+  47:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  70:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  73:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  76:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\marketplace\[propertyId]\success\page.tsx
+  40:156  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\verify\page.tsx
+  95:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\app\verify\page.tsx:95:7
+  93 |     const code = otp.join("")
+  94 |     if (code.length === 6 && !loading) {
+> 95 |       handleSubmit(code)
+     |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  96 |     }
+  97 |   }, [otp, loading, handleSubmit])
+  98 |  react-hooks/set-state-in-effect
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\components\dashboard\GISMap.tsx
+  169:8  warning  React Hook useCallback has a missing dependency: 'onMarkerDrag'. Either include it or remove the dependency array. If 'onMarkerDrag' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\components\dashboard\Location.tsx
+  35:41  warning  'updateFields' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\components\dashboard\Success.tsx
+  17:9    error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\components\dashboard\Success.tsx:17:9
+  15 |
+  16 |     useEffect(() => {
+> 17 |         setMounted(true)
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  18 |     }, [])
+  19 |
+  20 |     // Default values if not mounted  react-hooks/set-state-in-effect
+  55:150  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react/no-unescaped-entities
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\components\landing\hero-section.tsx
+  1:8   warning  'Image' is defined but never used       @typescript-eslint/no-unused-vars
+  5:32  warning  'BadgeCheck' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\components\ui\combobox.tsx
+  277:3  warning  'children' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\components\ui\sidebar.tsx
+  611:26  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\components\ui\sidebar.tsx:611:26
+  609 |   // Random width between 50 to 90%.
+  610 |   const width = React.useMemo(() => {
+> 611 |     return `${Math.floor(Math.random() * 40) + 50}%`
+      |                          ^^^^^^^^^^^^^ Cannot call impure function
+  612 |   }, [])
+  613 |
+  614 |   return (  react-hooks/purity
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\context\RegistrationContext.tsx
+  131:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\context\RegistrationContext.tsx:131:9
+  129 |     // Load from localStorage on mount (client side only)
+  130 |     useEffect(() => {
+> 131 |         setData(loadFromStorage())
+      |         ^^^^^^^ Avoid calling setState() directly within an effect
+  132 |         setHydrated(true)
+  133 |     }, [])
+  134 |  react-hooks/set-state-in-effect
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\hooks\use-location-data.ts
+  23:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\hooks\use-location-data.ts:23:13
+  21 |         // Only fetch for valid 6-digit pincodes
+  22 |         if (!pincode || pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
+> 23 |             setData(null)
+     |             ^^^^^^^ Avoid calling setState() directly within an effect
+  24 |             setError(null)
+  25 |             return
+  26 |         }  react-hooks/set-state-in-effect
+
+D:\2026-PROJECTS\BhuSetu\website\bhusetu\src\lib\blockchain\client.ts
+  129:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  160:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 59 problems (27 errors, 32 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

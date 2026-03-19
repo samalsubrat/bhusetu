@@ -37,6 +37,13 @@ enum TransactionStatus {
   REFUNDED
 }
 
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
 enum RegistrationStatus {
   DRAFT              // User started but hasn't paid
   PENDING_PAYMENT    // Payment failed / incomplete — 3-day window
@@ -73,6 +80,8 @@ model User {
   properties      Property[]
   transactions    Transaction[] @relation("BuyerTransactions")
   registrations   Registration[]
+  listings        PropertyListing[]
+  offers          Offer[]
 
   @@map("users")
 }
@@ -160,20 +169,58 @@ model Document {
 }
 
 model PropertyListing {
-  id           String   @id @default(cuid())
-  propertyId   String
-  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  propertyId       String?
+  property         Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
+  // Link to verified registration (the primary source for land records)
+  registrationId   String
+  registration     Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  // Seller
+  listedByUserId   String
+  listedByUser     User     @relation(fields: [listedByUserId], references: [id])
+
+  // Listing details
+  title            String
+  description      String?
   listedPriceInPaise BigInt
-  isActive     Boolean  @default(true)
-  listedAt     DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  contactEmail     String?
+  contactPhone     String?
 
-  transactions Transaction[]
+  isActive         Boolean  @default(true)
+  listedAt         DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  transactions     Transaction[]
+  offers           Offer[]
 
   @@index([propertyId])
+  @@index([registrationId])
+  @@index([listedByUserId])
   @@index([isActive])
   @@map("property_listings")
+}
+
+model Offer {
+  id             String      @id @default(cuid())
+  listingId      String
+  listing        PropertyListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  offerByUserId  String
+  offerByUser    User        @relation(fields: [offerByUserId], references: [id])
+
+  amountInPaise  BigInt
+  message        String?
+  status         OfferStatus @default(PENDING)
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([listingId])
+  @@index([offerByUserId])
+  @@index([status])
+  @@map("offers")
 }
 
 model Transaction {
@@ -251,6 +298,8 @@ model Registration {
 
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+
+  listings         PropertyListing[]
 
   @@unique([regYear, regNumber])
   @@index([userId])

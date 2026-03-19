@@ -88,6 +88,7 @@ export async function GET(
                 user: registration.user,
             },
             blockchain: blockchainRecord,
+            isOwner: registration.userId === session.userId,
         })
     } catch (error) {
         console.error("[LAND_RECORD_GET]", error)
