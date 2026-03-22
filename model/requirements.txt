@@ -1,0 +1,36 @@
+# ============================================================
+#  Gas Fee Prediction Model — Python Dependencies
+# ============================================================
+# Install all:  pip install -r requirements.txt
+# Production:   pip install -r requirements.txt --no-dev
+
+# ── Core ML Stack
+xgboost>=2.0.0
+lightgbm>=4.3.0
+catboost>=1.2.0
+scikit-learn>=1.4.0
+numpy>=1.26.0
+pandas>=2.2.0
+joblib>=1.3.0
+
+# ── Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# ── API Server
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
+
+# ── Blockchain Connectors (optional — comment out if not needed)
+web3>=6.0.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# ── Monitoring & Logging (production)
+# prometheus-client>=0.20.0
+# structlog>=24.0.0
+
+# ── Testing
+# pytest>=8.0.0
+# httpx>=0.27.0  # For FastAPI test client
